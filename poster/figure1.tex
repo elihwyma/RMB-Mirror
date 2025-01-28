@@ -1,0 +1,14 @@
+% For more info on making UML Diagrams - https://perso.ensta-paris.fr/~kielbasi/tikzuml/var/files/doc/tikzumlmanual.pdf
+
+% CLASS DIAGRAM
+
+\textbf{Class Diagram}
+\begin{center}%
+\begin{tikzpicture}
+\umlclass[x=2, y=-3]{Parent Class}{ var1 : int \\ var2 : double \\ method1(param1)}{}
+\umlclass[x=-2, y=-8, anchor=north]{Child 1}{ var3 : float \\ var4 : string}{}
+\umlclass[x=6, y=-8, anchor=north]{Child 2}{ var5 : float \\ var6 : bool}{}
+\umlVHVinherit[ arm2=−2cm] {Child 1}{Parent Class}
+\umlVHVinherit[ arm2=−2cm] {Child 2}{Parent Class}
+\end{tikzpicture}
+\end{center}%
