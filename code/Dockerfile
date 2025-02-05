@@ -8,10 +8,15 @@ RUN apk update && apk upgrade && apk add --no-cache \
     cmake \
     g++ \
     make \
-    pkgconfig
+    pkgconfig \
+    libffi \ 
+    git
 
 # Set up a build area
 WORKDIR /build
+
+# Clone in Tensorflow Lite
+RUN git clone --branch v2.18.0 --depth 1 https://github.com/tensorflow/tensorflow.git tensorflow_src
 
 # Copy the source code
 COPY . .
