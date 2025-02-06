@@ -5,14 +5,30 @@ project(comp209)
 find_package(PkgConfig REQUIRED)
 add_executable(runtime)
 
-set(TENSORFLOW_SOURCE_DIR "tensorflow_src")
+set(TENSORFLOW_REPO "https://github.com/tensorflow/tensorflow.git")
+set(TENSORFLOW_SRC "${CMAKE_SOURCE_DIR}/tensorflow_src")
 
-  add_subdirectory(
-  "${TENSORFLOW_SOURCE_DIR}/tensorflow/lite"
+if(NOT EXISTS ${TENSORFLOW_SRC})
+    message(STATUS "Cloning TensorFlow repository...")
+    execute_process(
+        COMMAND git clone --depth=1 ${TENSORFLOW_REPO} ${TENSORFLOW_SRC}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        RESULT_VARIABLE GIT_CLONE_RESULT
+    )
+    
+    if(NOT GIT_CLONE_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to clone TensorFlow repository!")
+    endif()
+else()
+    message(STATUS "TensorFlow source directory already exists.")
+endif()
+
+add_subdirectory(
+  "${TENSORFLOW_SRC}/tensorflow/lite"
   "${CMAKE_CURRENT_BINARY_DIR}/tensorflow-lite" EXCLUDE_FROM_ALL)
 
 target_include_directories( runtime PUBLIC include )
-target_include_directories( runtime PRIVATE ${TENSORFLOW_SOURCE_DIR} )
+target_include_directories( runtime PRIVATE ${TENSORFLOW_SRC} )
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -26,3 +42,6 @@ target_sources( runtime
 target_link_libraries( runtime
     tensorflow-lite
 )
+
+# Copy resources into build
+file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

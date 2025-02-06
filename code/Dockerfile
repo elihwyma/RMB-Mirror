@@ -1,45 +1,47 @@
 # ================================
 # Build image
 # ================================
-FROM alpine:latest AS build
+FROM ubuntu:latest AS build
 
 # Install OS updates
-RUN apk update && apk upgrade && apk add --no-cache \
+RUN apt update && apt upgrade -y && apt install -y \
     cmake \
-    g++ \
     make \
-    pkgconfig \
-    libffi \ 
-    git
+    git \
+    python3 \
+    python3-pip \
+    build-essential \
+    clang \
+    pkg-config
 
 # Set up a build area
 WORKDIR /build
 
-# Clone in Tensorflow Lite
-RUN git clone --branch v2.18.0 --depth 1 https://github.com/tensorflow/tensorflow.git tensorflow_src
-
 # Copy the source code
 COPY . .
 
+# Generate the project
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release
+
 # Build the project
-RUN cmake -B build -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build build
+RUN cmake --build build
 
 # Switch to the staging area
 WORKDIR /staging
 
 RUN cp /build/build/runtime .
+RUN cp /build/resources/* .
 
 # ================================
 # Final image
 # ================================
-FROM alpine:latest
+FROM ubuntu:latest
 
 # Set up the runtime environment
 WORKDIR /app
 
 # Copy the runtime files
-COPY --from=build /staging/runtime .
+COPY --from=build /staging/* .
 
 # Run the application
 ENTRYPOINT ["./runtime"]
