@@ -7,11 +7,12 @@ add_executable(runtime)
 
 set(TENSORFLOW_REPO "https://github.com/tensorflow/tensorflow.git")
 set(TENSORFLOW_SRC "${CMAKE_SOURCE_DIR}/tensorflow_src")
+set(TENSORFLOW_VERSION "v2.18.0")
 
 if(NOT EXISTS ${TENSORFLOW_SRC})
     message(STATUS "Cloning TensorFlow repository...")
     execute_process(
-        COMMAND git clone --depth=1 ${TENSORFLOW_REPO} ${TENSORFLOW_SRC}
+        COMMAND git clone --depth=1 --branch ${TENSORFLOW_VERSION} ${TENSORFLOW_REPO} ${TENSORFLOW_SRC}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         RESULT_VARIABLE GIT_CLONE_RESULT
     )
@@ -37,6 +38,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 target_sources( runtime
     PRIVATE
         src/main.cpp
+        src/interpreter.cpp
 )
 
 target_link_libraries( runtime
