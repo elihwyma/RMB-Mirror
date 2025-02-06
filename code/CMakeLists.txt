@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.26)
 project(comp209)
 
 find_package(PkgConfig REQUIRED)
+find_package(OpenCV REQUIRED)
 add_executable(runtime)
 
 set(TENSORFLOW_REPO "https://github.com/tensorflow/tensorflow.git")
@@ -30,10 +31,14 @@ add_subdirectory(
 
 target_include_directories( runtime PUBLIC include )
 target_include_directories( runtime PRIVATE ${TENSORFLOW_SRC} )
+target_include_directories( runtime PRIVATE ${OpenCV_INCLUDE_DIRS} )
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
+set_target_properties(runtime
+    PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED YES
+        CXX_EXTENSIONS NO
+)
 
 target_sources( runtime
     PRIVATE
@@ -41,9 +46,8 @@ target_sources( runtime
         src/interpreter.cpp
 )
 
-target_link_libraries( runtime
-    tensorflow-lite
-)
-
+target_link_libraries( runtime tensorflow-lite)
+target_link_libraries(runtime ${OpenCV_LIBS} ${OpenCV_LIBRARIES})
+     
 # Copy resources into build
 file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
