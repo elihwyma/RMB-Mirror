@@ -34,19 +34,19 @@ On macOS it is recommened to use [OrbStack](https://orbstack.dev).
 1. Install the latest Xcode version. For this it is recommended to use [XcodesApp](https://github.com/XcodesOrg/XcodesApp/releases).
 2. Install required dependencies
    ```
-   brew install pkg-config cmake make git ninja
+   brew install pkg-config cmake make git ninja opencv
    ```
 
 **Debian/Ubuntu**:
 1. Install required dependencies
    ```
-   sudo apt update && sudo apt install -y cmake make python3 git python3-pip build-essential clang pkg-config ninja
+   sudo apt update && sudo apt install -y cmake make python3 git python3-pip build-essential clang pkg-config ninja libopencv-dev
    ```
 
 **Arch**:
 1. Install required dependencies
    ```
-   sudo pacman -Sy cmake make python3 git python3-pip base-devel clang pkg-config ninja
+   sudo pacman -Sy cmake make python3 git python3-pip base-devel clang pkg-config ninja opencv
    ```
 
 **Building**
