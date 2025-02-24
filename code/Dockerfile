@@ -4,7 +4,7 @@
 FROM ubuntu:latest AS build
 
 # Install OS updates
-RUN apt update && apt upgrade -y && apt install -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     cmake \
     make \
     git \
@@ -14,7 +14,7 @@ RUN apt update && apt upgrade -y && apt install -y \
     clang \
     pkg-config \
     libopencv-dev \
-    ninja
+    ninja-build
 
 # Set up a build area
 WORKDIR /build
@@ -32,12 +32,15 @@ RUN cmake --build build
 WORKDIR /staging
 
 RUN cp /build/build/runtime .
-RUN cp /build/resources/* .
+RUN cp -r /build/resources .
 
 # ================================
 # Final image
 # ================================
 FROM ubuntu:latest
+
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    libopencv-dev
 
 # Set up the runtime environment
 WORKDIR /app
