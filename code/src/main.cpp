@@ -31,5 +31,33 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error opening camera." << std::endl;
         return -1;
     }
+
+    cv::Mat frame;
+    while (1) {
+        if (!cameraCapture.read(frame)) {
+            std::cerr << "Error reading frame." << std::endl;
+            break;
+        }
+
+        float32_t confidence = 0;
+        Landmark landmarks[OUTPUT_COUNT];
+
+        interpreter.infer(frame, &confidence, landmarks);
+        fprintf(stdout, "Confidence: %f\n", confidence);
+
+        for (uint32_t i = 0; i < OUTPUT_COUNT; i++) {
+            fprintf(stdout, "Drawing: %f %f\n", landmarks[i].x, landmarks[i].y);
+            cv::circle(frame, {int(landmarks[i].x), int(landmarks[i].y)}, 5, cv::Scalar(0, 255, 0), -1);
+        }
+
+        cv::imshow("Webcam", frame);
+        if (cv::waitKey(1) == 'q') {
+            break;
+        }        
+    }
+
+    cameraCapture.release();
+    cv::destroyAllWindows();
+
     return 0;
 }
