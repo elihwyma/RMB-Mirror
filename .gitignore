@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 code/tensorflow_src/
+code/dynamixel_src/
 
 # C extensions
 *.so
@@ -166,3 +167,4 @@ DerivedData
 Packages/
 Pods/
 ida/ida.reg
+

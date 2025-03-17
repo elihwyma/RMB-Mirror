@@ -16,6 +16,7 @@ public:
     Interpreter(const char *model_path);
 
     void infer(const cv::Mat input, float32_t *confidence, Landmark landmarks[OUTPUT_COUNT]);
+    std::vector<std::vector<float>> project_landmarks(const std::vector<float> input, const cv::Size tensor_size, const cv::Rect padding);
 private:
     std::unique_ptr<tflite::Interpreter> interpreter;
 };

@@ -44,13 +44,15 @@ int main(int argc, char* argv[]) {
 
         interpreter.infer(frame, &confidence, landmarks);
         fprintf(stdout, "Confidence: %f\n", confidence);
+        continue;
 
         for (uint32_t i = 0; i < OUTPUT_COUNT; i++) {
-            fprintf(stdout, "Drawing: %f %f\n", landmarks[i].x, landmarks[i].y);
+           
+            // fprintf(stdout, "Drawing: %f %f\n", landmarks[i].x, landmarks[i].y);
             cv::circle(frame, {int(landmarks[i].x), int(landmarks[i].y)}, 5, cv::Scalar(0, 255, 0), -1);
         }
 
-        cv::imshow("Webcam", frame);
+        cv::imshow("Face Landmark Detection", frame);
         if (cv::waitKey(1) == 'q') {
             break;
         }        
