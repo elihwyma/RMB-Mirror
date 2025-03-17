@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <tensorflow/lite/interpreter.h>
 #include <opencv2/opencv.hpp>
+#include <runtime_types.h>
 
 #define IMAGE_SIZE 256
 #define OUTPUT_COUNT 478

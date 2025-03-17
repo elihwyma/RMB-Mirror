@@ -82,10 +82,8 @@ target_sources( runtime
     PRIVATE
         src/main.cpp
         src/interpreter.cpp
+        src/servo_control.cpp
 )
 
 target_link_libraries( runtime tensorflow-lite)
 target_link_libraries(runtime ${OpenCV_LIBS} ${OpenCV_LIBRARIES})
-     
-# Copy resources into build
-file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

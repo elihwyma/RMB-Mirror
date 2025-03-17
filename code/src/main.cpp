@@ -1,11 +1,23 @@
 #include <stdio.h>
 #include <interpreter.h>
+#include <servo_control.h>
 #include <iostream>
+#include <runtime_types.h>
 #include <string>
 #include <opencv2/opencv.hpp>
 
 int main(int argc, char* argv[]) {
     printf("Hello, World!\n");
+
+    std::string autoPort = "";
+    ServoControl::getPortName(&autoPort);
+    printf("Auto Port: %s\n", autoPort.c_str());
+    return 0;
+
+    ServoControl servo;
+    fprintf(stdout, "Servo Control %p\n", &servo);
+
+    return 0;
 
     std::string modelPath = "resources/face_landmark.tflite";
     int cameraID = 0;

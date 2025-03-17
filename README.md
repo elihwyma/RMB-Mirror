@@ -21,7 +21,7 @@ On macOS it is recommened to use [OrbStack](https://orbstack.dev).
    ```
 3: Build the docker container
    ```
-   docker build . -t runtime-dev
+   docker build . -t runtime-dev --platform linux/arm64
    ```
 4: Run the ducker container
    ```
