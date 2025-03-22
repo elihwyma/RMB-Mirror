@@ -10,8 +10,13 @@ public:
 
     static void getPortName(std::string *port_name);
     static std::string errorDescription(int error);
-    int setPosition(uint8_t id, uint16_t position);
+    int16_t setPosition(uint8_t id, uint16_t position);
 private:
     dynamixel::PortHandler *portHandler;
     dynamixel::PacketHandler *packetHandler;
+
+    int16_t getPosition(uint8_t id);
+
+    uint8_t closePort();
+    uint8_t openPort();
 };

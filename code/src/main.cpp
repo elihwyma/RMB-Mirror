@@ -9,13 +9,9 @@
 int main(int argc, char* argv[]) {
     printf("Hello, World!\n");
 
-    std::string autoPort = "";
-    ServoControl::getPortName(&autoPort);
-    printf("Auto Port: %s\n", autoPort.c_str());
-    return 0;
-
-    ServoControl servo;
-    fprintf(stdout, "Servo Control %p\n", &servo);
+    ServoControl control;
+    control.setPosition(1, 700);
+    control.setPosition(2, 700);
 
     return 0;
 

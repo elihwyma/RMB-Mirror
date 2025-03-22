@@ -15,17 +15,13 @@
 // Protocol version
 #define PROTOCOL_VERSION                1.0                 // See which protocol version is used in the Dynamixel
 
-// Default setting
-#define DXL_ID                          1                   // Dynamixel ID: 1
-#define BAUDRATE                        1000000
-#define DEVICENAME                      "/dev/ttyUSB0"      // Check which port is being used on your controller
-                                                            // ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
+#define BAUDRATE                        115200
 
 #define TORQUE_ENABLE                   1                   // Value for enabling the torque
 #define TORQUE_DISABLE                  0                   // Value for disabling the torque
 #define DXL_MINIMUM_POSITION_VALUE      0                 // Dynamixel will rotate between this value
 #define DXL_MAXIMUM_POSITION_VALUE      1023                // and this value (note that the Dynamixel would not move when the position value is out of movable range. Check e-manual about the range of the Dynamixel you use.)
-#define DXL_MOVING_STATUS_THRESHOLD     10                  // Dynamixel moving status threshold
+#define DXL_MOVING_STATUS_THRESHOLD     2                  // Dynamixel moving status threshold
 
 using namespace dynamixel;
 
@@ -43,79 +39,10 @@ ServoControl::ServoControl() {
     this->portHandler = portHandler;
     this->packetHandler = packetHandler;
 
-    int index = 0;
-    int dxl_comm_result = COMM_TX_FAIL;             // Communication result
-    int dxl_goal_position[2] = {DXL_MINIMUM_POSITION_VALUE, DXL_MAXIMUM_POSITION_VALUE};         // Goal position
-
-    uint8_t dxl_error = 0;                          // Dynamixel error
-    uint16_t dxl_present_position = 0;              // Present position
-
-    // Open port
-    if (portHandler->openPort()) {
-        printf("Succeeded to open the port!\n");
-    } else {
-        fprintf(stderr, "Failed to open the port!\n");
+    if (openPort() != 0) {
+        fprintf(stderr, "Failed to open port\n");
         exit(1);
     }
-
-    
-    // Set port baudrate
-    if (portHandler->setBaudRate(115200))
-    {
-        printf("Succeeded to change the baudrate!\n");
-    }
-    else
-    {
-        fprintf(stderr, "Failed to change the baudrate!\n");
-        exit(1);
-    }
-    /*
-    while(1)
-  {
-    printf("Press any key to continue! (or press ESC to quit!)\n");
-    if (getch() == ESC_ASCII_VALUE)
-      break;
-
-    // Write goal position
-    dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, DXL_ID, ADDR_MX_GOAL_POSITION, dxl_goal_position[index], &dxl_error);
-    dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, 2, ADDR_MX_GOAL_POSITION, dxl_goal_position[index], &dxl_error);
-    if (dxl_comm_result != COMM_SUCCESS)
-    {
-      printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-    }
-    else if (dxl_error != 0)
-    {
-      printf("%s\n", packetHandler->getRxPacketError(dxl_error));
-    }
-
-    do
-    {
-      // Read present position
-      dxl_comm_result = packetHandler->read2ByteTxRx(portHandler, DXL_ID, ADDR_MX_PRESENT_POSITION, &dxl_present_position, &dxl_error);
-      if (dxl_comm_result != COMM_SUCCESS)
-      {
-        printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-      }
-      else if (dxl_error != 0)
-      {
-        printf("%s\n", packetHandler->getRxPacketError(dxl_error));
-      }
-
-      printf("[ID:%03d] GoalPos:%03d  PresPos:%03d\n", DXL_ID, dxl_goal_position[index], dxl_present_position);
-
-    }while((abs(dxl_goal_position[index] - dxl_present_position) > DXL_MOVING_STATUS_THRESHOLD));
-
-    // Change goal position
-    if (index == 0)
-    {
-      index = 1;
-    }
-    else
-    {
-      index = 0;
-    }
-  }
-    */
 }
 
 void ServoControl::getPortName(std::string *port_name) {
@@ -148,11 +75,67 @@ void ServoControl::getPortName(std::string *port_name) {
 
     if (!possible_ports.empty()) {
         *port_name = possible_ports[0]; // Select the first detected port
+        fprintf(stdout, "Automatically Detected Port: %s\n", port_name->c_str());
     } else {
         *port_name = ""; // No available port found
     }
 }
 
-int ServoControl::setPosition(uint8_t id, uint16_t position) {
-    return 0;
+int16_t ServoControl::setPosition(uint8_t id, uint16_t position) {
+  uint8_t dxl_error = 0;
+  int dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, id, ADDR_MX_GOAL_POSITION, position, &dxl_error);
+  if (dxl_comm_result != COMM_SUCCESS) {
+    printf("%d: %s\n", dxl_comm_result, packetHandler->getTxRxResult(dxl_comm_result));
+    return -1;
+  } else if (dxl_error != 0) {
+    printf("%d: %s\n", dxl_error, packetHandler->getRxPacketError(dxl_error));
+    return -1;
+  }
+
+  int16_t currentPosition = 0;
+  do {
+    currentPosition = getPosition(id);
+    if (currentPosition == -1) {
+      return -1;
+    }
+  } while (abs(position - currentPosition) > DXL_MOVING_STATUS_THRESHOLD);
+
+  return 0;
+}
+
+int16_t ServoControl::getPosition(uint8_t id) {
+  uint8_t dxl_error = 0;
+  uint16_t dxl_present_position = 0;
+  int dxl_comm_result = packetHandler->read2ByteTxRx(portHandler, id, ADDR_MX_PRESENT_POSITION, &dxl_present_position, &dxl_error);
+  if (dxl_comm_result != COMM_SUCCESS) {
+    printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+    return -1;
+  } else if (dxl_error != 0) {
+    printf("%s %d\n", packetHandler->getRxPacketError(dxl_error), dxl_error);
+
+    closePort();
+    openPort();
+
+    return -1;
+  }
+  return dxl_present_position;
+}
+
+uint8_t ServoControl::closePort() {
+  portHandler->closePort();
+  return 0;
+}
+
+uint8_t ServoControl::openPort() {
+  uint8_t ret = portHandler->openPort();
+  if (!ret) {
+    printf("Failed to open the port!\n");
+    return 1;
+  }
+  ret = portHandler->setBaudRate(BAUDRATE);
+  if (!ret) {
+    printf("Failed to change the baudrate!\n");
+    return 2;
+  }
+  return 0;
 }
