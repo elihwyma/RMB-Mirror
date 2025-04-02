@@ -1,14 +1,15 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.10)
 
 project(comp209)
 
 find_package(PkgConfig REQUIRED)
 find_package(OpenCV REQUIRED)
+pkg_check_modules(GPIOD REQUIRED libgpiod)
 add_executable(runtime)
 
 set(TENSORFLOW_REPO "https://github.com/tensorflow/tensorflow.git")
 set(TENSORFLOW_SRC "${CMAKE_SOURCE_DIR}/tensorflow_src")
-set(TENSORFLOW_VERSION "v2.18.0")
+set(TENSORFLOW_VERSION "v2.19.0")
 
 if(NOT EXISTS ${TENSORFLOW_SRC})
     message(STATUS "Cloning TensorFlow repository...")
@@ -51,6 +52,7 @@ target_include_directories( runtime PUBLIC include )
 target_include_directories( runtime PRIVATE ${TENSORFLOW_SRC} )
 target_include_directories( runtime PRIVATE ${OpenCV_INCLUDE_DIRS} )
 target_include_directories( runtime PRIVATE ${DYNAMIXEL_SRC}/c++/include/dynamixel_sdk )
+target_include_directories( runtime PRIVATE ${GPIOD_INCLUDE_DIRS} )
 
 set_target_properties(runtime
     PROPERTIES
@@ -86,4 +88,5 @@ target_sources( runtime
 )
 
 target_link_libraries( runtime tensorflow-lite)
-target_link_libraries(runtime ${OpenCV_LIBS} ${OpenCV_LIBRARIES})
+target_link_libraries( runtime ${OpenCV_LIBS} ${OpenCV_LIBRARIES} )
+target_link_libraries( runtime PRIVATE ${GPIOD_LIBRARIES} )
