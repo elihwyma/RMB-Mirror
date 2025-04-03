@@ -91,8 +91,10 @@ target_sources( runtime
 target_sources( runtime
     PRIVATE
         src/main.cpp
-        src/interpreter.cpp
+        src/stepper_control.cpp
         src/servo_control.cpp
+        src/face_detector.cpp
+        src/landmark_extractor.cpp
 )
 
 target_link_libraries( runtime tensorflow-lite)

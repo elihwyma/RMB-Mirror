@@ -72,3 +72,4 @@ This project is licensed under the Apache 2.0 License. It's full terms can be re
 | [Tensorflow](https://github.com/tensorflow/tensorflow) | [Apache 2.0](https://github.com/tensorflow/tensorflow/blob/master/LICENSE) | Running inference on TensorflowLite model |
 | [MediaPipe](https://github.com/google-ai-edge/mediapipe) | [Apache 2.0](https://github.com/google-ai-edge/mediapipe/blob/master/LICENSE) | The Face Mesh model for identifiying the landmarks of the user |
 | [DynamixelSDK](https://github.com/ROBOTIS-GIT/DynamixelSDK) | [Apache 2.0](https://github.com/ROBOTIS-GIT/DynamixelSDK/blob/main/LICENSE) | Controlling the Servos used in the arm |
+| [minimal-mediapipe-cpp](https://github.com/jondhn/minimal-mediapipe-cpp/tree/main) | [MIT](https://github.com/jondhn/minimal-mediapipe-cpp/blob/main/LICENSE) | Invoking Tensorflow |

@@ -1,11 +1,13 @@
+#include <cstdio>
+#include <stdexcept>
 #include <stdio.h>
-#include <interpreter.h>
 #include <servo_control.h>
 #include <iostream>
 #include <runtime_types.h>
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <stepper_control.h>
+#include <landmark_extractor.h>
 
 int main(int argc, char* argv[]) {
     printf("Hello, World!\n");
@@ -15,14 +17,14 @@ int main(int argc, char* argv[]) {
     StepperControl stepper;
     #endif
 
-    std::string modelPath = "resources/face_landmark.tflite";
+    std::string landmarkModelPath = "resources/face_landmarks.tflite";
+    std::string detectionModelPath = "resources/face_detection_short_range.tflite";
+    fprintf(stdout, "1\n");
+    LandmarkExtractor extractor(detectionModelPath, landmarkModelPath);
+    fprintf(stdout, "2\n");
     int cameraID = 0;
 
     for (int i = 1; i < argc - 1; i++) {
-        if (strcmp(argv[i], "-m") == 0) {
-
-            modelPath = argv[i + 1];
-        }
         if (strcmp(argv[i], "-v") == 0) {
             try {
                 cameraID = atoi(argv[i + 1]);
@@ -33,8 +35,7 @@ int main(int argc, char* argv[]) {
     }
 
     cv::VideoCapture cameraCapture(cameraID);
-    Interpreter interpreter(modelPath.c_str());
-
+   
     if (!cameraCapture.isOpened()) {
         std::cerr << "Error opening camera." << std::endl;
         return -1;
@@ -47,19 +48,15 @@ int main(int argc, char* argv[]) {
             break;
         }
 
-        float32_t confidence = 0;
-        Landmark landmarks[OUTPUT_COUNT];
-
-        interpreter.infer(frame, &confidence, landmarks);
-        fprintf(stdout, "Confidence: %f\n", confidence);
-        continue;
-
-        for (uint32_t i = 0; i < OUTPUT_COUNT; i++) {
-           
-            // fprintf(stdout, "Drawing: %f %f\n", landmarks[i].x, landmarks[i].y);
-            cv::circle(frame, {int(landmarks[i].x), int(landmarks[i].y)}, 5, cv::Scalar(0, 255, 0), -1);
+        try {
+            std::vector<cv::Point2i> landmarks = extractor.Process(frame);
+            for (const auto& landmark : landmarks) {
+                cv::circle(frame, landmark, 2, cv::Scalar(0, 255, 0), -1);
+            }
+        } catch (const std::invalid_argument& e) {
+            fprintf(stderr, "No Face!\n");
         }
-
+        
         cv::imshow("Face Landmark Detection", frame);
         if (cv::waitKey(1) == 'q') {
             break;
