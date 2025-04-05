@@ -50,13 +50,27 @@ int main(int argc, char* argv[]) {
 
         try {
             std::vector<cv::Point2i> landmarks = extractor.Process(frame);
-            for (const auto& landmark : landmarks) {
-                cv::circle(frame, landmark, 2, cv::Scalar(0, 255, 0), -1);
+
+            // Create a new blank image to draw our contours
+            // We want a white background with the important detaits in black dots
+            frame = cv::Mat::zeros(frame.size(), frame.type());
+            // Draw a white background
+            frame.setTo(cv::Scalar(255, 255, 255));
+            // Draw the important details in black dots
+            const int importantIndexes[] = { 
+                185, 40, 39, 37, 0, 267, 269, 270, 409,
+                61, 146, 91, 181, 84, 17, 314, 405, 321,
+                375, 291, 33, 7, 163, 144, 145, 153, 154, 155, 133,
+                246, 161, 160, 159, 158, 157, 173,
+                263, 249, 390, 373, 374, 380, 381, 382, 362,
+                466, 388, 387, 386, 385, 384, 398,
+            };
+            for (int i = 0; i < sizeof(importantIndexes) / sizeof(importantIndexes[0]); i++) {
+                cv::circle(frame, landmarks[importantIndexes[i]], 2, cv::Scalar(0, 0, 0), -1);
             }
         } catch (const std::invalid_argument& e) {
             fprintf(stderr, "No Face!\n");
         }
-        
         cv::imshow("Face Landmark Detection", frame);
         if (cv::waitKey(1) == 'q') {
             break;

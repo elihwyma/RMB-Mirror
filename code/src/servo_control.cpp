@@ -1,5 +1,7 @@
+#include <cstdio>
 #include <servo_control.h>
 #include <filesystem>
+#include <sys/types.h>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -43,6 +45,13 @@ ServoControl::ServoControl() {
         fprintf(stderr, "Failed to open port\n");
         exit(1);
     }
+
+    for (uint8_t id = 1; id <= 3; id++) {
+        if (setPositionMode(id) != 0) {
+            fprintf(stderr, "Failed to set wheel mode on %d. It may not be connected.\n", id);
+            exit(1);
+        }
+    }
 }
 
 void ServoControl::getPortName(std::string *port_name) {
@@ -77,21 +86,17 @@ void ServoControl::getPortName(std::string *port_name) {
         *port_name = possible_ports[0]; // Select the first detected port
         fprintf(stdout, "Automatically Detected Port: %s\n", port_name->c_str());
     } else {
-        *port_name = ""; // No available port found
+        fprintf(stderr, "No available port found\n");
+        exit(1);
     }
 }
 
 int16_t ServoControl::setPosition(uint8_t id, uint16_t position) {
-  uint8_t dxl_error = 0;
-  int dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, id, ADDR_MX_GOAL_POSITION, position, &dxl_error);
-  if (dxl_comm_result != COMM_SUCCESS) {
-    printf("%d: %s\n", dxl_comm_result, packetHandler->getTxRxResult(dxl_comm_result));
-    return -1;
-  } else if (dxl_error != 0) {
-    printf("%d: %s\n", dxl_error, packetHandler->getRxPacketError(dxl_error));
+  int ret = write2ByteTxRx(id, ADDR_MX_GOAL_POSITION, position);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to set position\n");
     return -1;
   }
-
   int16_t currentPosition = 0;
   do {
     currentPosition = getPosition(id);
@@ -99,14 +104,12 @@ int16_t ServoControl::setPosition(uint8_t id, uint16_t position) {
       return -1;
     }
   } while (abs(position - currentPosition) > DXL_MOVING_STATUS_THRESHOLD);
-
   return 0;
 }
 
-int16_t ServoControl::getPosition(uint8_t id) {
+int16_t ServoControl::read2ByteTxRx(uint8_t id, uint16_t address, uint16_t *data) {
   uint8_t dxl_error = 0;
-  uint16_t dxl_present_position = 0;
-  int dxl_comm_result = packetHandler->read2ByteTxRx(portHandler, id, ADDR_MX_PRESENT_POSITION, &dxl_present_position, &dxl_error);
+  int dxl_comm_result = packetHandler->read2ByteTxRx(portHandler, id, address, data, &dxl_error);
   if (dxl_comm_result != COMM_SUCCESS) {
     printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
     return -1;
@@ -118,7 +121,33 @@ int16_t ServoControl::getPosition(uint8_t id) {
 
     return -1;
   }
-  return dxl_present_position;
+  return 0;
+}
+
+int16_t ServoControl::write2ByteTxRx(uint8_t id, uint16_t address, uint16_t data) {
+  uint8_t dxl_error = 0;
+  int dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, id, address, data, &dxl_error);
+  if (dxl_comm_result != COMM_SUCCESS) {
+    printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
+    return -1;
+  } else if (dxl_error != 0) {
+    printf("%s %d\n", packetHandler->getRxPacketError(dxl_error), dxl_error);
+
+    closePort();
+    openPort();
+
+    return -1;
+  }
+  return 0;
+}
+
+int16_t ServoControl::getPosition(uint8_t id) {
+  uint16_t position = 0;
+  int16_t ret = read2ByteTxRx(id, ADDR_MX_PRESENT_POSITION, &position);
+  if (ret != 0) {
+    return -1;
+  }
+  return position;
 }
 
 uint8_t ServoControl::closePort() {
@@ -136,6 +165,49 @@ uint8_t ServoControl::openPort() {
   if (!ret) {
     printf("Failed to change the baudrate!\n");
     return 2;
+  }
+  return 0;
+}
+
+int16_t ServoControl::setWheelMode(uint8_t id) {
+  int ret = write2ByteTxRx(id, 6, 0);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to set wheel mode\n");
+    return -1;
+  }
+  ret = write2ByteTxRx(id, 8, 0);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to set wheel mode\n");
+    return -1;
+  }
+  return 0;
+}
+
+int16_t ServoControl::setPositionMode(uint8_t id) {
+  int ret = write2ByteTxRx(id, 6, 0);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to set position mode\n");
+    return -1;
+  }
+  ret = write2ByteTxRx(id, 8, 1023);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to set position mode\n");
+    return -1;
+  }
+  return 0;
+}
+
+int16_t ServoControl::setWheelSpeed(uint8_t id, uint8_t direction, uint16_t speed) {
+  // 10th bit determines direction
+  if (direction == 1) {
+    speed = speed | (1 << 10);
+  } else {
+    speed = speed & ~(1 << 10);
+  }
+  int ret = write2ByteTxRx(id, 32, speed);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to set wheel speed\n");
+    return -1;
   }
   return 0;
 }

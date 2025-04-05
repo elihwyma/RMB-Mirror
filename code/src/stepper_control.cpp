@@ -1,5 +1,7 @@
 #if GPIOD
 
+#include <cstdio>
+#include <cstdlib>
 #include <stepper_control.h>
 
 StepperControl::StepperControl() {

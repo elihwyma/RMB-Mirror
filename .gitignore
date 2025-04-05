@@ -5,6 +5,8 @@ __pycache__/
 
 code/tensorflow_src/
 code/dynamixel_src/
+code/tensorflow_build/
+code/build/
 
 # C extensions
 *.so

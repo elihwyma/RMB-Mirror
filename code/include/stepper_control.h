@@ -15,6 +15,6 @@ private:
     struct gpiod_chip *chip;
     struct gpiod_line *stepLine;
     struct gpiod_line *dirLine;
-}
+};
 
 #endif

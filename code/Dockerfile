@@ -1,7 +1,7 @@
 # ================================
 # Build image
 # ================================
-FROM ubuntu:latest AS build
+FROM ghcr.io/dtcooper/raspberrypi-os:latest AS build
 
 # Install OS updates
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
@@ -14,10 +14,18 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     clang \
     pkg-config \
     libopencv-dev \
-    ninja-build
+    ninja-build \
+    wget \
+    libgpiod-dev
 
 # Set up a build area
 WORKDIR /build
+
+# Install TensorFlow Lite
+RUN wget https://github.com/prepkg/tensorflow-lite-raspberrypi/releases/latest/download/tensorflow-lite_64.deb && apt-get install -y ./tensorflow-lite_64.deb
+
+# Pre-Download dynamixel
+RUN git clone --depth=1 --branch "3.8.2" "https://github.com/ROBOTIS-GIT/DynamixelSDK.git" dynamixel_src
 
 # Copy the source code
 COPY . .
@@ -37,10 +45,15 @@ RUN cp -r /build/resources .
 # ================================
 # Final image
 # ================================
-FROM ubuntu:latest
+FROM ghcr.io/dtcooper/raspberrypi-os:latest
 
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    libopencv-dev
+    libopencv-dev \
+    wget \
+    libgpiod-dev
+
+# Install TensorFlow Lite
+RUN wget https://github.com/prepkg/tensorflow-lite-raspberrypi/releases/latest/download/tensorflow-lite_64.deb && apt-get install -y ./tensorflow-lite_64.deb
 
 # Set up the runtime environment
 WORKDIR /app
