@@ -16,7 +16,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libopencv-dev \
     ninja-build \
     wget \
-    libgpiod-dev
+    libgpiod-dev \
+    clangd
 
 # Set up a build area
 WORKDIR /build

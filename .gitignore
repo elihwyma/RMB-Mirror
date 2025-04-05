@@ -3,10 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-code/tensorflow_src/
-code/dynamixel_src/
-code/tensorflow_build/
-code/build/
+tensorflow_src/
+dynamixel_src/
+tensorflow_build/
+build/
 
 # C extensions
 *.so

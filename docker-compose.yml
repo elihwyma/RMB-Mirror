@@ -1,0 +1,7 @@
+services:
+  runtime:
+    image: docker.github.falmouth.ac.uk/aw295676/comp209-team/runtime:dev
+    privileged: true
+    restart: always
+    volumes:
+      - /dev:/dev

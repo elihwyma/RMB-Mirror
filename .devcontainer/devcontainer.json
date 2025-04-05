@@ -1,0 +1,16 @@
+{
+    "build": { "dockerfile": "Dockerfile" },
+    "postStartCommand": "bash .devcontainer/configure.sh",
+    "customizations": {
+    "vscode": {
+        "extensions": [
+            "llvm-vs-code-extensions.vscode-clangd",
+            "ms-vscode.cmake-tools",
+            "twxs.cmake"
+        ]
+    },
+    "mounts": [
+        "source=/dev,target=/dev,type=bind"
+    ]
+  }
+}

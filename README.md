@@ -15,15 +15,11 @@ On macOS it is recommened to use [OrbStack](https://orbstack.dev).
   ```
   git clone https://github.falmouth.ac.uk/AW295676/COMP209-team
   ```
-2: Navigate into the code directory
+2: Build the docker container
    ```
-   cd COMP209-team/code
+   docker build . -t docker.github.falmouth.ac.uk/aw295676/comp209-team/runtime:dev -t runtime-dev --platform linux/arm64
    ```
-3: Build the docker container
-   ```
-   docker build . -t runtime-dev --platform linux/arm64
-   ```
-4: Run the ducker container
+3: Run the ducker container
    ```
    docker run runtime-dev
    ``` 

@@ -8,17 +8,26 @@
 #include <opencv2/opencv.hpp>
 #include <stepper_control.h>
 #include <landmark_extractor.h>
+#include <unistd.h>
 
 int main(int argc, char* argv[]) {
     printf("Hello, World!\n");
 
-    ServoControl control;
+    // ServoControl control;
     #if GPIOD
-    StepperControl stepper;
+    // StepperControl stepper;
     #endif
 
-    std::string landmarkModelPath = "resources/face_landmarks.tflite";
-    std::string detectionModelPath = "resources/face_detection_short_range.tflite";
+    std::string landmarkModelPath = "face_landmarks.tflite";
+    std::string detectionModelPath = "face_detection_short_range.tflite";
+
+    if (access(landmarkModelPath.c_str(), F_OK)) {
+        landmarkModelPath = "resources/" + landmarkModelPath;
+    }
+    if (access(detectionModelPath.c_str(), F_OK)) {
+        detectionModelPath = "resources/" + detectionModelPath;
+    }
+
     fprintf(stdout, "1\n");
     LandmarkExtractor extractor(detectionModelPath, landmarkModelPath);
     fprintf(stdout, "2\n");
@@ -71,14 +80,21 @@ int main(int argc, char* argv[]) {
         } catch (const std::invalid_argument& e) {
             fprintf(stderr, "No Face!\n");
         }
+        #if GPIOD
+        #else
         cv::imshow("Face Landmark Detection", frame);
         if (cv::waitKey(1) == 'q') {
             break;
-        }        
+        }
+        #endif        
     }
 
     cameraCapture.release();
+    
+    #if GPIOD
+    #else
     cv::destroyAllWindows();
+    #endif
 
     return 0;
 }

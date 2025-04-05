@@ -4,7 +4,7 @@
 FROM ghcr.io/dtcooper/raspberrypi-os:latest AS build
 
 # Install OS updates
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+RUN apt-get update && apt-get upgrade -y --no-install-recommends --no-install-suggests && apt-get install -y --no-install-recommends --no-install-suggests \
     cmake \
     make \
     git \
@@ -16,7 +16,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libopencv-dev \
     ninja-build \
     wget \
-    libgpiod-dev
+    libgpiod-dev && apt-get clean autoclean && apt-get autoremove --yes && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 # Set up a build area
 WORKDIR /build
@@ -40,20 +40,23 @@ RUN cmake --build build
 WORKDIR /staging
 
 RUN cp /build/build/runtime .
-RUN cp -r /build/resources .
+RUN cp -r /build/resources resources
 
 # ================================
 # Final image
 # ================================
-FROM ghcr.io/dtcooper/raspberrypi-os:latest
+FROM ghcr.io/dtcooper/raspberrypi-os:python3.11-bookworm
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    libopencv-dev \
+RUN apt-get update && apt-get upgrade -y --no-install-recommends --no-install-suggests && apt-get install -y --no-install-recommends --no-install-suggests \
+    libopencv-core406 \
+    libopencv-videoio406 \
     wget \
-    libgpiod-dev
+    libgpiod2 \
+    python3-numpy \
+    ca-certificates && apt-get clean autoclean && apt-get autoremove --yes && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 # Install TensorFlow Lite
-RUN wget https://github.com/prepkg/tensorflow-lite-raspberrypi/releases/latest/download/tensorflow-lite_64.deb && apt-get install -y ./tensorflow-lite_64.deb
+RUN wget https://github.com/prepkg/tensorflow-lite-raspberrypi/releases/latest/download/tensorflow-lite_64.deb && dpkg -i tensorflow-lite_64.deb && rm tensorflow-lite_64.deb
 
 # Set up the runtime environment
 WORKDIR /app

@@ -1,0 +1,15 @@
+[Unit]
+Description=Rate My Bot Runtime Service
+Requires=docker.service
+After=docker.service
+StartLimitBurst=3
+StartLimitInterval=0
+StartLimitIntervalSec=5
+
+[Service]
+Restart=always
+WorkingDirectory=/home/kirby
+ExecStart=/usr/bin/docker-compose up runtime
+
+[Install]
+WantedBy=default.target
