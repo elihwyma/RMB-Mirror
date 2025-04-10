@@ -14,6 +14,8 @@ public:
     int16_t setWheelMode(uint8_t id);
     int16_t setPositionMode(uint8_t id);
     int16_t setWheelSpeed(uint8_t id, uint8_t direction, uint16_t speed);
+    void InverseKinematics(float x, float y);
+    void Interpolate(float targetx, float targety);
 private:
     dynamixel::PortHandler *portHandler;
     dynamixel::PacketHandler *packetHandler;

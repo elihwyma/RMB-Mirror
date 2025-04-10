@@ -10,7 +10,8 @@
         ]
     },
     "mounts": [
-        "source=/dev,target=/dev,type=bind"
-    ]
+        "source=/dev,target=/dev"
+    ],
+    "privileged": true
   }
 }

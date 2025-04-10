@@ -8,7 +8,7 @@ StartLimitIntervalSec=5
 
 [Service]
 Restart=always
-WorkingDirectory=/home/kirby
+WorkingDirectory=/home/amy/comp209-team
 ExecStart=/usr/bin/docker-compose up runtime
 
 [Install]

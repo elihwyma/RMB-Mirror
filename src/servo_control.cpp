@@ -27,6 +27,9 @@
 
 using namespace dynamixel;
 
+float currentx;
+float currenty;
+
 std::string ServoControl::errorDescription(int error) {
     return "";
 }
@@ -210,4 +213,57 @@ int16_t ServoControl::setWheelSpeed(uint8_t id, uint8_t direction, uint16_t spee
     return -1;
   }
   return 0;
+}
+
+
+void ServoControl::InverseKinematics(float x, float y) {
+  float l1 = 110;
+  float l2 = 135;
+  float angle1, angle2, rad_angle1, rad_angle2, dmx_value1, dmx_value2;
+  float pi = 3.1415926535897932384626433832795;
+  //Calculate IK & convert to radians - rad_angle2 = beta, rad_angle1 = alpha
+  rad_angle2 = acos( (sq(x) + sq(y) - sq(l1) - sq(l2) ) / (2.0 * l1 * l2) );
+  rad_angle1 = atan2(y, x) - atan2(l2 * sin(- rad_angle2), l1 + l2 * cos(- rad_angle2) );
+  //Convert to degrees
+  angle1 = rad_angle1 * (180 / pi);
+  angle2 = rad_angle2 * (180 / pi);
+  //Convert to dynamixel range
+  dmx_value1 = angle1 * (1023/360);
+  dmx_value2 = angle2 * (1023/360);
+  //Apply degrees to servos
+  setPosition(2, dmx_value1);
+  setPosition(1, dmx_value2);
+
+  delay(50);
+}
+
+void ServoControl::Interpolate(float targetx, float targety) {
+  if (abs(targetx - currentx) > abs(targety - currenty)){
+    if (currentx < targetx){
+      for (int x = currentx; x < targetx; x + 0.2){
+        float y = m * x + c;
+        InverseKinematics(x, y);
+      }
+    }
+    else (currentx > targetx){
+      for (int x = currentx; x > targetx; x - 0.2){
+        float y = m * x + c;
+        InverseKinematics(x, y);
+      }
+    }
+  }
+  else{
+    if (currenty < targety){
+      for (int y = currenty; y < targety; y + 0.2){
+        float x = (y - c)/m;
+        InverseKinematics(x, y);
+      }
+    }
+    else (currenty > targety){
+      for (int y = currenty; y > targety; y - 0.2){
+        float x = (y - c)/m;
+        InverseKinematics(x, y);
+      }
+    }
+  }
 }
