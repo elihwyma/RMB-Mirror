@@ -6,7 +6,8 @@
         "extensions": [
             "llvm-vs-code-extensions.vscode-clangd",
             "ms-vscode.cmake-tools",
-            "twxs.cmake"
+            "twxs.cmake",
+            "sanaajani.taskrunnercode"
         ]
     },
     "mounts": [
