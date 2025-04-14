@@ -13,7 +13,7 @@
 int main(int argc, char* argv[]) {
     printf("Hello, World!\n");
 
-    // ServoControl control;
+    ServoControl control;
     #if GPIOD
     // StepperControl stepper;
     #endif

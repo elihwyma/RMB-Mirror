@@ -2,6 +2,7 @@
 #include <servo_control.h>
 #include <filesystem>
 #include <sys/types.h>
+#include <cmath>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -215,6 +216,7 @@ int16_t ServoControl::setWheelSpeed(uint8_t id, uint8_t direction, uint16_t spee
   return 0;
 }
 
+#define sq(x) ((x)*(x))
 
 void ServoControl::InverseKinematics(float x, float y) {
   float l1 = 110;
@@ -233,11 +235,10 @@ void ServoControl::InverseKinematics(float x, float y) {
   //Apply degrees to servos
   setPosition(2, dmx_value1);
   setPosition(1, dmx_value2);
-
-  delay(50);
 }
 
 void ServoControl::Interpolate(float targetx, float targety) {
+  /*
   if (abs(targetx - currentx) > abs(targety - currenty)){
     if (currentx < targetx){
       for (int x = currentx; x < targetx; x + 0.2){
@@ -258,12 +259,12 @@ void ServoControl::Interpolate(float targetx, float targety) {
         float x = (y - c)/m;
         InverseKinematics(x, y);
       }
-    }
-    else (currenty > targety){
+    } else if (currenty > targety) {
       for (int y = currenty; y > targety; y - 0.2){
         float x = (y - c)/m;
         InverseKinematics(x, y);
       }
     }
   }
+    */
 }
