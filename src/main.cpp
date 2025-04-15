@@ -18,6 +18,9 @@ int main(int argc, char* argv[]) {
     // StepperControl stepper;
     #endif
 
+    control.InverseKinematics(125, 125);
+    exit(0);
+
     std::string landmarkModelPath = "face_landmarks.tflite";
     std::string detectionModelPath = "face_detection_short_range.tflite";
 

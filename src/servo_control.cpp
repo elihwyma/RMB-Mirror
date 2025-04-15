@@ -24,7 +24,7 @@
 #define TORQUE_DISABLE                  0                   // Value for disabling the torque
 #define DXL_MINIMUM_POSITION_VALUE      0                 // Dynamixel will rotate between this value
 #define DXL_MAXIMUM_POSITION_VALUE      1023                // and this value (note that the Dynamixel would not move when the position value is out of movable range. Check e-manual about the range of the Dynamixel you use.)
-#define DXL_MOVING_STATUS_THRESHOLD     2                  // Dynamixel moving status threshold
+#define DXL_MOVING_STATUS_THRESHOLD     10                 // Dynamixel moving status threshold
 
 using namespace dynamixel;
 
@@ -101,13 +101,14 @@ int16_t ServoControl::setPosition(uint8_t id, uint16_t position) {
     fprintf(stderr, "Failed to set position\n");
     return -1;
   }
-  int16_t currentPosition = 0;
-  do {
-    currentPosition = getPosition(id);
-    if (currentPosition == -1) {
-      return -1;
+  uint16_t status = 1;
+  while (status) {
+    int16_t error = read2ByteTxRx(id, 46, &status);
+    if (error != 0) {
+      fprintf(stderr, "Read error %d\n", error);
+      return error;
     }
-  } while (abs(position - currentPosition) > DXL_MOVING_STATUS_THRESHOLD);
+  }
   return 0;
 }
 
@@ -219,9 +220,9 @@ int16_t ServoControl::setWheelSpeed(uint8_t id, uint8_t direction, uint16_t spee
 #define sq(x) ((x)*(x))
 
 void ServoControl::InverseKinematics(float x, float y) {
-  float l1 = 110;
-  float l2 = 135;
-  float angle1, angle2, rad_angle1, rad_angle2, dmx_value1, dmx_value2;
+  float l1 = 200;
+  float l2 = 180;
+  float angle1, angle2, rad_angle1, rad_angle2;
   float pi = 3.1415926535897932384626433832795;
   //Calculate IK & convert to radians - rad_angle2 = beta, rad_angle1 = alpha
   rad_angle2 = acos( (sq(x) + sq(y) - sq(l1) - sq(l2) ) / (2.0 * l1 * l2) );
@@ -230,8 +231,21 @@ void ServoControl::InverseKinematics(float x, float y) {
   angle1 = rad_angle1 * (180 / pi);
   angle2 = rad_angle2 * (180 / pi);
   //Convert to dynamixel range
-  dmx_value1 = angle1 * (1023/360);
-  dmx_value2 = angle2 * (1023/360);
+  uint16_t dmx_value1 = round(1023 - (angle1 * (1023/360)));
+  uint16_t dmx_value2 = round(1023 - (angle2 * (1023/360)));
+
+  //Check if values are in range
+  if (dmx_value1 > 1023) {
+    fprintf(stderr, "Value out of range: %d\n", dmx_value1);
+    return;
+  }
+  if (dmx_value2 > 1023) {
+    fprintf(stderr, "Value out of range: %d\n", dmx_value2);
+    return;
+  }
+
+  fprintf(stdout, "Suggested values: %d %d\n", dmx_value1, dmx_value2);
+
   //Apply degrees to servos
   setPosition(2, dmx_value1);
   setPosition(1, dmx_value2);
