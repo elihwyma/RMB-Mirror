@@ -16,6 +16,7 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends --no-install-su
     libopencv-dev \
     ninja-build \
     wget \
+    libi2c0 \
     libgpiod-dev && apt-get clean autoclean && apt-get autoremove --yes && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 # Set up a build area
@@ -53,6 +54,7 @@ RUN apt-get update && apt-get upgrade -y --no-install-recommends --no-install-su
     wget \
     libgpiod2 \
     python3-numpy \
+    libi2c0 \
     ca-certificates && apt-get clean autoclean && apt-get autoremove --yes && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 # Install TensorFlow Lite

@@ -112,3 +112,4 @@ target_sources( runtime
 )
 
 target_link_libraries( runtime ${OpenCV_LIBS} ${OpenCV_LIBRARIES} )
+target_link_libraries (runtime i2c )

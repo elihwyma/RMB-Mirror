@@ -17,7 +17,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     ninja-build \
     wget \
     libgpiod-dev \
-    clangd
+    clangd \
+    libi2c0
 
 # Set up a build area
 WORKDIR /build
