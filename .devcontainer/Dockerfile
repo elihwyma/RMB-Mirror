@@ -1,27 +1,27 @@
 # ================================
 # Build image
 # ================================
-FROM ghcr.io/dtcooper/raspberrypi-os:latest AS build
+FROM alpine:latest AS build
 
-# Install OS updates
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+
+RUN apk add --no-cache curl
+RUN echo "https://portsman.anamy.gay" | tee -a /etc/apk/repositories 
+RUN mkdir -p /etc/apk/keys && curl -o /etc/apk/keys/portsman-anamy.rsa.pub https://raw.githubusercontent.com/elihwyma/portsman/refs/heads/main/portsman-anamy.rsa.pub
+
+RUN apk update && apk add --no-cache \
     cmake \
-    make \
     git \
-    python3 \
-    python3-pip \
-    build-essential \
-    clang \
-    pkg-config \
-    libopencv-dev \
-    ninja-build \
-    wget \
-    libgpiod-dev \
-    clangd \
-    libi2c0
+    clang17 \
+    pkgconf \
+    opencv-dev \ 
+    libstdc++ \
+    samurai \
+    i2c-tools-dev \
+    libgpiod-dev=1.6.5-r0 \
+    libdxl-dev \
+    tensorflowlite-dev \
+    flatbuffers-dev
 
 # Set up a build area
 WORKDIR /build
 
-# Install TensorFlow Lite
-RUN wget https://github.com/prepkg/tensorflow-lite-raspberrypi/releases/latest/download/tensorflow-lite_64.deb && apt-get install -y ./tensorflow-lite_64.deb

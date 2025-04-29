@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string>
 
-#include <dynamixel_sdk.h>
+#include <libdxl/dynamixel_sdk.h>
 class ServoControl {
 public:
     ServoControl();
@@ -14,8 +14,9 @@ public:
     int16_t setWheelMode(uint8_t id);
     int16_t setPositionMode(uint8_t id);
     int16_t setWheelSpeed(uint8_t id, uint8_t direction, uint16_t speed);
-    void InverseKinematics(float x, float y);
+    int16_t setCoordinatePosition(double x, double y);
     void Interpolate(float targetx, float targety);
+    int16_t setPair(uint16_t servoOne, uint16_t servoTwo);
 private:
     dynamixel::PortHandler *portHandler;
     dynamixel::PacketHandler *packetHandler;

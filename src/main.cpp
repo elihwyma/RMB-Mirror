@@ -18,7 +18,16 @@ int main(int argc, char* argv[]) {
     // StepperControl stepper;
     #endif
 
-    control.InverseKinematics(125, 125);
+    int16_t ret = 0;
+    for (;;) {
+        for (int i = -150; i < 200; i += 15) {
+            ret = control.setCoordinatePosition(i, 100);
+            if (ret != 0) {
+                fprintf(stderr, "Failed to set position\n");
+                return -1;
+            }
+        }
+    }
     exit(0);
 
     std::string landmarkModelPath = "face_landmarks.tflite";

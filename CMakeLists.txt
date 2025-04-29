@@ -7,8 +7,15 @@ find_package(OpenCV REQUIRED)
 pkg_check_modules(GPIOD QUIET libgpiod)
 add_executable(runtime)
 
+if(GPIOD_FOUND)
+    add_definitions(-DGPIOD)
+    target_include_directories( runtime PRIVATE ${GPIOD_INCLUDE_DIRS})
+    target_link_libraries( runtime ${GPIOD_LIBRARIES})
+endif()
+
 # See if TensorflowLite already exists
-find_library(TFL NAMES tensorflow-lite PATHS /usr/local/lib/)
+find_library(TFL NAMES tensorflow-lite PATHS /usr/lib/)
+find_library(DXL NAMES dxl PATHS /usr/lib/)
 
 if(TFL)
     message(STATUS "TensorFlow Lite found at ${TFL}")
@@ -44,46 +51,29 @@ else()
     target_link_libraries( runtime tensorflow-lite)
 endif()
 
-
-if(GPIOD_FOUND)
-    add_definitions(-DGPIOD)
-endif()
-
-set(DYNAMIXEL_REPO "https://github.com/ROBOTIS-GIT/DynamixelSDK.git")
-set(DYNAMIXEL_SRC "${CMAKE_SOURCE_DIR}/dynamixel_src")
-set(DYNAMIXEL_VERSION "3.8.2")
-if(NOT EXISTS ${DYNAMIXEL_SRC})
-    message(STATUS "Cloning Dynamixel repository...")
-    execute_process(
-        COMMAND git clone --depth=1 --branch ${DYNAMIXEL_VERSION} ${DYNAMIXEL_REPO} ${DYNAMIXEL_SRC}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        RESULT_VARIABLE GIT_CLONE_RESULT
-    )
-    
-    if(NOT GIT_CLONE_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to clone Dynamixel repository!")
-    endif()
+if(DXL)
+    message(STATUS "Dynamixel found at ${DXL}")
+    target_link_libraries( runtime ${DXL} )
 else()
-    message(STATUS "Dynamixel source directory already exists.")
-endif()
+    set(DYNAMIXEL_REPO "https://github.com/ROBOTIS-GIT/DynamixelSDK.git")
+    set(DYNAMIXEL_SRC "${CMAKE_SOURCE_DIR}/dynamixel_src")
+    set(DYNAMIXEL_VERSION "3.8.2")
+    if(NOT EXISTS ${DYNAMIXEL_SRC})
+        message(STATUS "Cloning Dynamixel repository...")
+        execute_process(
+            COMMAND git clone --depth=1 --branch ${DYNAMIXEL_VERSION} ${DYNAMIXEL_REPO} ${DYNAMIXEL_SRC}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            RESULT_VARIABLE GIT_CLONE_RESULT
+        )
+        
+        if(NOT GIT_CLONE_RESULT EQUAL 0)
+            message(FATAL_ERROR "Failed to clone Dynamixel repository!")
+        endif()
+    else()
+        message(STATUS "Dynamixel source directory already exists.")
+    endif()
 
-target_include_directories( runtime PUBLIC include )
-target_include_directories( runtime PRIVATE ${OpenCV_INCLUDE_DIRS} )
-target_include_directories( runtime PRIVATE ${DYNAMIXEL_SRC}/c++/include/dynamixel_sdk )
-
-if(GPIOD_FOUND)
-    target_include_directories( runtime PRIVATE ${GPIOD_INCLUDE_DIRS})
-    target_link_libraries( runtime ${GPIOD_LIBRARIES})
-endif()
-
-set_target_properties(runtime
-    PROPERTIES
-        CXX_STANDARD 20
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS NO
-)
-
-target_sources( runtime
+    target_sources( runtime
     PRIVATE
         ${DYNAMIXEL_SRC}/c++/src/dynamixel_sdk/group_bulk_read.cpp
         ${DYNAMIXEL_SRC}/c++/src/dynamixel_sdk/group_bulk_write.cpp
@@ -100,6 +90,18 @@ target_sources( runtime
         ${DYNAMIXEL_SRC}/c++/src/dynamixel_sdk/port_handler.cpp
         ${DYNAMIXEL_SRC}/c++/src/dynamixel_sdk/protocol1_packet_handler.cpp
         ${DYNAMIXEL_SRC}/c++/src/dynamixel_sdk/protocol2_packet_handler.cpp
+    )
+    target_include_directories( runtime PRIVATE ${DYNAMIXEL_SRC}/c++/include/dynamixel_sdk )
+endif()
+
+target_include_directories( runtime PUBLIC include )
+target_include_directories( runtime PRIVATE ${OpenCV_INCLUDE_DIRS} )
+
+set_target_properties(runtime
+    PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED YES
+        CXX_EXTENSIONS NO
 )
 
 target_sources( runtime
@@ -112,4 +114,19 @@ target_sources( runtime
 )
 
 target_link_libraries( runtime ${OpenCV_LIBS} ${OpenCV_LIBRARIES} )
-target_link_libraries (runtime i2c )
+target_link_libraries (
+    runtime 
+        absl_log_internal_message
+        absl_log_internal_check_op 
+        absl_log_globals 
+        absl_log_internal_globals 
+        absl_log_internal_format
+        absl_log_sink
+        absl_log_flags
+        absl_log_entry
+        absl_log_internal_nullguard
+        absl_log_internal_proto
+        absl_log_initialize)
+target_link_libraries(runtime stdc++)
+
+# target_link_libraries (runtime i2c )

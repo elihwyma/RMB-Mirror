@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <cstdio>
 #include <servo_control.h>
 #include <filesystem>
@@ -22,9 +23,6 @@
 
 #define TORQUE_ENABLE                   1                   // Value for enabling the torque
 #define TORQUE_DISABLE                  0                   // Value for disabling the torque
-#define DXL_MINIMUM_POSITION_VALUE      0                 // Dynamixel will rotate between this value
-#define DXL_MAXIMUM_POSITION_VALUE      1023                // and this value (note that the Dynamixel would not move when the position value is out of movable range. Check e-manual about the range of the Dynamixel you use.)
-#define DXL_MOVING_STATUS_THRESHOLD     10                 // Dynamixel moving status threshold
 
 using namespace dynamixel;
 
@@ -56,6 +54,10 @@ ServoControl::ServoControl() {
             exit(1);
         }
     }
+
+    fprintf(stdout, "Homing Servos...\n");
+    setPair(512, 512);
+    fprintf(stdout, "Homed to centre\n");
 }
 
 void ServoControl::getPortName(std::string *port_name) {
@@ -77,7 +79,7 @@ void ServoControl::getPortName(std::string *port_name) {
         std::string base_path = "/dev/";
         std::string prefix = "ttyUSB";
     #endif
-
+        
     #if defined(__APPLE__) || defined(__linux__)
         for (const auto &entry : std::filesystem::directory_iterator(base_path)) {
             if (entry.path().filename().string().find(prefix) != std::string::npos) {
@@ -93,6 +95,36 @@ void ServoControl::getPortName(std::string *port_name) {
         fprintf(stderr, "No available port found\n");
         exit(1);
     }
+}
+
+int16_t ServoControl::setPair(uint16_t servoOne, uint16_t servoTwo) {
+  int ret = write2ByteTxRx(2, ADDR_MX_GOAL_POSITION, servoOne);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to set position for servo 1\n");
+    return -1;
+  }
+  ret = write2ByteTxRx(1, ADDR_MX_GOAL_POSITION, servoTwo);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to set position for servo 2\n");
+    return -1;
+  }
+  uint16_t status = 1;
+  while (status) {
+    int16_t error = read2ByteTxRx(1, 46, &status);
+    if (error != 0) {
+      fprintf(stderr, "Read error %d\n", error);
+      return error;
+    }
+  }
+  status = 1;
+  while (status) {
+    int16_t error = read2ByteTxRx(2, 46, &status);
+    if (error != 0) {
+      fprintf(stderr, "Read error %d\n", error);
+      return error;
+    }
+  }
+  return 0;
 }
 
 int16_t ServoControl::setPosition(uint8_t id, uint16_t position) {
@@ -219,36 +251,40 @@ int16_t ServoControl::setWheelSpeed(uint8_t id, uint8_t direction, uint16_t spee
 
 #define sq(x) ((x)*(x))
 
-void ServoControl::InverseKinematics(float x, float y) {
-  float l1 = 200;
-  float l2 = 180;
-  float angle1, angle2, rad_angle1, rad_angle2;
-  float pi = 3.1415926535897932384626433832795;
-  //Calculate IK & convert to radians - rad_angle2 = beta, rad_angle1 = alpha
-  rad_angle2 = acos( (sq(x) + sq(y) - sq(l1) - sq(l2) ) / (2.0 * l1 * l2) );
-  rad_angle1 = atan2(y, x) - atan2(l2 * sin(- rad_angle2), l1 + l2 * cos(- rad_angle2) );
-  //Convert to degrees
-  angle1 = rad_angle1 * (180 / pi);
-  angle2 = rad_angle2 * (180 / pi);
-  //Convert to dynamixel range
-  uint16_t dmx_value1 = round(1023 - (angle1 * (1023/360)));
-  uint16_t dmx_value2 = round(1023 - (angle2 * (1023/360)));
+#define L1_LENGTH 182.0  // mm
+#define L2_LENGTH 178.0  // mm
+#define SERVO_MIN 0
+#define SERVO_MAX 1023
+#define SERVO_RANGE_DEGREES 300.0
 
-  //Check if values are in range
-  if (dmx_value1 > 1023) {
-    fprintf(stderr, "Value out of range: %d\n", dmx_value1);
-    return;
+uint16_t angleToPosition(double radians) {
+  double degrees = radians * (180.0 / M_PI);
+  // Map to 0 - 1023
+  double pos = (degrees / SERVO_RANGE_DEGREES) * SERVO_MAX;
+  // Clamp to valid servo range
+  if (pos < SERVO_MIN) pos = SERVO_MIN;
+  if (pos > SERVO_MAX) pos = SERVO_MAX;
+  return static_cast<uint16_t>(round(pos));
+}
+
+int16_t ServoControl::setCoordinatePosition(double x, double y) {
+  double distance = sqrt(x * x + y * y);
+
+  if (distance > (L1_LENGTH + L2_LENGTH) || distance < fabs(L1_LENGTH - L2_LENGTH)) {
+      fprintf(stderr, "Target position is unreachable\n");
+      return -1;
   }
-  if (dmx_value2 > 1023) {
-    fprintf(stderr, "Value out of range: %d\n", dmx_value2);
-    return;
-  }
 
-  fprintf(stdout, "Suggested values: %d %d\n", dmx_value1, dmx_value2);
+  double theta2 = acos((sq(x) + sq(y) - sq(L1_LENGTH) - sq(L2_LENGTH)) / (2.0 * L1_LENGTH * L2_LENGTH));
+  double theta1 = atan2(y, x) - atan2(L2_LENGTH * sin(theta2), L1_LENGTH + L2_LENGTH * cos(-theta2));
 
-  //Apply degrees to servos
-  setPosition(2, dmx_value1);
-  setPosition(1, dmx_value2);
+  uint16_t servoOne = angleToPosition(theta1);
+  uint16_t servoTwo = angleToPosition(theta2);
+
+  fprintf(stdout, "Servo 1: %d, Servo 2: %d, Theta 1: %f, Theta 2: %f\n", servoOne, servoTwo, theta1, theta2);
+  
+  // Set the servo positions
+  return setPair(servoOne, servoTwo);
 }
 
 void ServoControl::Interpolate(float targetx, float targety) {
