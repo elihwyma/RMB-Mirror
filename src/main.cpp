@@ -13,21 +13,39 @@
 int main(int argc, char* argv[]) {
     printf("Hello, World!\n");
 
-    ServoControl control;
-    #if GPIOD
-    // StepperControl stepper;
-    #endif
+    StepperControl stepper;
+    stepper.setServoPower(true);
 
-    int16_t ret = 0;
+    ServoControl control;
+
+    // Read in X and Y from CLI:
     for (;;) {
-        for (int i = -150; i < 200; i += 15) {
-            ret = control.setCoordinatePosition(i, 100);
-            if (ret != 0) {
-                fprintf(stderr, "Failed to set position\n");
-                return -1;
-            }
+        std::string input;
+        std::cout << "Enter X and Y coordinates (or 'q' to quit, alternatively 's' to step): ";
+        std::getline(std::cin, input);
+
+        if (input == "q") {
+            break;
         }
+        if (input == "s") {
+            stepper.step(100);
+            continue;
+        }
+        if (input == "ss") {
+            stepper.step(10000);
+            continue;
+        }
+        std::istringstream iss(input);
+        double x, y;
+        if (!(iss >> x >> y)) {
+            std::cerr << "Invalid input. Please enter two numbers." << std::endl;
+            continue;
+        }
+
+        // Call the Interpolate function
+        control.setCoordinatePosition(x, y);
     }
+
     exit(0);
 
     std::string landmarkModelPath = "face_landmarks.tflite";

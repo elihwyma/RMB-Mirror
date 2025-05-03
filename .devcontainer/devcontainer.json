@@ -4,14 +4,13 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "llvm-vs-code-extensions.vscode-clangd",
-                "ms-vscode.cmake-tools",
-                "twxs.cmake"
+                "llvm-vs-code-extensions.vscode-clangd"
             ]
         }
     },
     "runArgs": [
-        "--volume=/dev:/dev"
+        "--volume=/dev:/dev",
+        "--volume=/sys:/sys"
     ],
     "privileged": true
 }

@@ -1,5 +1,7 @@
 {
     "cmake.generator": "Ninja",
     "cmake.configureOnOpen": true,
-    "cmake.buildDirectory": "${workspaceFolder}/build"
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.path": "/usr/lib/llvm17/bin/clangd"
 }

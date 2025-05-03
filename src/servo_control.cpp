@@ -24,6 +24,20 @@
 #define TORQUE_ENABLE                   1                   // Value for enabling the torque
 #define TORQUE_DISABLE                  0                   // Value for disabling the torque
 
+#define L1 165.0  // mm
+#define L2 175.103  // mm
+#define SERVO_MIN 0
+#define SERVO_MAX 1023
+#define SERVO_RANGE_DEGREES 300.0
+#define SERVO_CENTER_DEGREE 150.0
+#define sq(x) ((x)*(x))
+
+#define ANGLE_TO_POSITION(x) \
+  ((x) * (SERVO_MAX / SERVO_RANGE_DEGREES)) + (SERVO_MAX / 2)
+
+#define RADIANS_TO_POSITION(x) \
+  ((x) * (SERVO_MAX / (2 * M_PI))) + (SERVO_MAX / 2)
+
 using namespace dynamixel;
 
 float currentx;
@@ -48,16 +62,24 @@ ServoControl::ServoControl() {
         exit(1);
     }
 
-    for (uint8_t id = 1; id <= 3; id++) {
-        if (setPositionMode(id) != 0) {
-            fprintf(stderr, "Failed to set wheel mode on %d. It may not be connected.\n", id);
-            exit(1);
-        }
+    int16_t error = 0;
+    error = setPositionMode(1);
+    if (error != 0) {
+        fprintf(stderr, "Failed to set position mode on servo 1\n");
+        exit(1);
     }
-
+    error = setPositionMode(2);
+    if (error != 0) {
+        fprintf(stderr, "Failed to set position mode on servo 2\n");
+        exit(1);
+    }
+    error = setWheelMode(3);
+    if (error != 0) {
+        fprintf(stderr, "Failed to set wheel mode on servo 3\n");
+        exit(1);
+    }
     fprintf(stdout, "Homing Servos...\n");
     setPair(512, 512);
-    fprintf(stdout, "Homed to centre\n");
 }
 
 void ServoControl::getPortName(std::string *port_name) {
@@ -98,12 +120,13 @@ void ServoControl::getPortName(std::string *port_name) {
 }
 
 int16_t ServoControl::setPair(uint16_t servoOne, uint16_t servoTwo) {
-  int ret = write2ByteTxRx(2, ADDR_MX_GOAL_POSITION, servoOne);
+  // Safety checks that we're not about to kill ourself
+  int ret = write2ByteTxRx(1, ADDR_MX_GOAL_POSITION, servoOne);
   if (ret != 0) {
     fprintf(stderr, "Failed to set position for servo 1\n");
     return -1;
   }
-  ret = write2ByteTxRx(1, ADDR_MX_GOAL_POSITION, servoTwo);
+  ret = write2ByteTxRx(2, ADDR_MX_GOAL_POSITION, servoTwo);
   if (ret != 0) {
     fprintf(stderr, "Failed to set position for servo 2\n");
     return -1;
@@ -124,6 +147,11 @@ int16_t ServoControl::setPair(uint16_t servoOne, uint16_t servoTwo) {
       return error;
     }
   }
+  return 0;
+}
+
+int16_t ServoControl::validatePositions(uint16_t servoOne, uint16_t servoTwo) {
+  
   return 0;
 }
 
@@ -164,6 +192,7 @@ int16_t ServoControl::read2ByteTxRx(uint8_t id, uint16_t address, uint16_t *data
 int16_t ServoControl::write2ByteTxRx(uint8_t id, uint16_t address, uint16_t data) {
   uint8_t dxl_error = 0;
   int dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, id, address, data, &dxl_error);
+  
   if (dxl_comm_result != COMM_SUCCESS) {
     printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
     return -1;
@@ -223,12 +252,12 @@ int16_t ServoControl::setWheelMode(uint8_t id) {
 int16_t ServoControl::setPositionMode(uint8_t id) {
   int ret = write2ByteTxRx(id, 6, 0);
   if (ret != 0) {
-    fprintf(stderr, "Failed to set position mode\n");
+    fprintf(stderr, "Failed to set position mode 1\n");
     return -1;
   }
   ret = write2ByteTxRx(id, 8, 1023);
   if (ret != 0) {
-    fprintf(stderr, "Failed to set position mode\n");
+    fprintf(stderr, "Failed to set position mode 2\n");
     return -1;
   }
   return 0;
@@ -249,42 +278,60 @@ int16_t ServoControl::setWheelSpeed(uint8_t id, uint8_t direction, uint16_t spee
   return 0;
 }
 
-#define sq(x) ((x)*(x))
+double radToDeg(double radians) {
+  return radians * (180.0 / M_PI);
+}
 
-#define L1_LENGTH 182.0  // mm
-#define L2_LENGTH 178.0  // mm
-#define SERVO_MIN 0
-#define SERVO_MAX 1023
-#define SERVO_RANGE_DEGREES 300.0
-
-uint16_t angleToPosition(double radians) {
-  double degrees = radians * (180.0 / M_PI);
+uint16_t ServoControl::angleToPosition(double degrees) {
   // Map to 0 - 1023
   double pos = (degrees / SERVO_RANGE_DEGREES) * SERVO_MAX;
   // Clamp to valid servo range
   if (pos < SERVO_MIN) pos = SERVO_MIN;
   if (pos > SERVO_MAX) pos = SERVO_MAX;
+
   return static_cast<uint16_t>(round(pos));
 }
 
 int16_t ServoControl::setCoordinatePosition(double x, double y) {
-  double distance = sqrt(x * x + y * y);
+  fprintf(stdout, "X: %f, Y: %f\n", x, y);
 
-  if (distance > (L1_LENGTH + L2_LENGTH) || distance < fabs(L1_LENGTH - L2_LENGTH)) {
-      fprintf(stderr, "Target position is unreachable\n");
-      return -1;
+
+  double distanceSquared = x * x + y * y;
+  double distance = sqrt(distanceSquared);
+
+  // Check reachability
+  if (distance > (L1 + L2) || distance < fabs(L1 - L2)) {
+      fprintf(stderr, "Target out of reach.\n");
+      return false;
   }
 
-  double theta2 = acos((sq(x) + sq(y) - sq(L1_LENGTH) - sq(L2_LENGTH)) / (2.0 * L1_LENGTH * L2_LENGTH));
-  double theta1 = atan2(y, x) - atan2(L2_LENGTH * sin(theta2), L1_LENGTH + L2_LENGTH * cos(-theta2));
+  // Law of cosines
+  double cosAngle2 = (distanceSquared - L1*L1 - L2*L2) / (2 * L1 * L2);
+  double angle2 = acos(cosAngle2); // Elbow angle (radians)
 
-  uint16_t servoOne = angleToPosition(theta1);
-  uint16_t servoTwo = angleToPosition(theta2);
+  double k1 = L1 + L2 * cos(angle2);
+  double k2 = L2 * sin(angle2);
+  double angle1 = atan2(y, x) - atan2(k2, k1); // Shoulder angle (radians)
 
-  fprintf(stdout, "Servo 1: %d, Servo 2: %d, Theta 1: %f, Theta 2: %f\n", servoOne, servoTwo, theta1, theta2);
-  
-  // Set the servo positions
-  return setPair(servoOne, servoTwo);
+  // Convert to degrees
+  double theta1Deg = radToDeg(angle1);
+  double theta2Deg = radToDeg(angle2);
+
+  // Adjust for your servo setup:
+  // 1. Offset by 150º when straight up (north)
+  // 2. L2 servo spins in opposite direction
+  double servo1Angle = 240 - theta1Deg;
+  double servo2Angle = 150 - theta2Deg;
+
+  fprintf(stdout, "Servo 1: %f, Servo 2: %f\n", servo1Angle, servo2Angle);
+
+  uint16_t pos1 = angleToPosition(servo1Angle);
+  uint16_t pos2 = angleToPosition(servo2Angle);
+
+  fprintf(stdout, "Servo 1 Position: %d, Servo 2 Position: %d %f %f\n", pos1, pos2, radToDeg(angle1), 180 - radToDeg(angle2));
+
+  setPair(SERVO_MAX - angleToPosition(servo1Angle), angleToPosition(servo2Angle));
+  return 0;
 }
 
 void ServoControl::Interpolate(float targetx, float targety) {
@@ -317,4 +364,26 @@ void ServoControl::Interpolate(float targetx, float targety) {
     }
   }
     */
+}
+
+int16_t ServoControl::raisePen() {
+  int ret = setPosition(3, 512);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to raise pen\n");
+    return -1;
+  }
+  return 0;
+}
+
+int16_t ServoControl::dropPen() {
+  int ret = setPosition(3, 1023);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to drop pen\n");
+    return -1;
+  }
+  return 0;
+}
+
+int16_t ServoControl::calibratePen() {
+  
 }

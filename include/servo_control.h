@@ -13,10 +13,16 @@ public:
     int16_t setPosition(uint8_t id, uint16_t position);
     int16_t setWheelMode(uint8_t id);
     int16_t setPositionMode(uint8_t id);
+    int16_t calibratePen();
     int16_t setWheelSpeed(uint8_t id, uint8_t direction, uint16_t speed);
+    uint16_t angleToPosition(double degrees);
     int16_t setCoordinatePosition(double x, double y);
     void Interpolate(float targetx, float targety);
+    int16_t validatePositions(uint16_t servoOne, uint16_t servoTwo);
     int16_t setPair(uint16_t servoOne, uint16_t servoTwo);
+
+    int16_t raisePen();
+    int16_t dropPen();
 private:
     dynamixel::PortHandler *portHandler;
     dynamixel::PacketHandler *packetHandler;

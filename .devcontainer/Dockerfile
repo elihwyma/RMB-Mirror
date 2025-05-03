@@ -12,6 +12,7 @@ RUN apk update && apk add --no-cache \
     cmake \
     git \
     clang17 \
+    clang17-extra-tools \
     pkgconf \
     opencv-dev \ 
     libstdc++ \
