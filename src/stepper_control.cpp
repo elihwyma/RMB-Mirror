@@ -15,8 +15,10 @@ StepperControl::StepperControl() {
     this->stepLine = gpiod_chip_get_line(this->chip, STEP_PIN);
     this->dirLine = gpiod_chip_get_line(this->chip, DIR_PIN);
     this->servoPowerLine = gpiod_chip_get_line(this->chip, SERVO_POWER);
+    this->buttonLedLine = gpiod_chip_get_line(this->chip, BUTTON_LED);
+    this->buttonInputLine = gpiod_chip_get_line(this->chip, BUTTON_INPUT);
 
-    if (!this->stepLine || !this->dirLine || !this->servoPowerLine) {
+    if (!this->stepLine || !this->dirLine || !this->servoPowerLine || !this->buttonLedLine || !this->buttonInputLine) {
         fprintf(stderr, "Failed to get GPIO lines\n");
         gpiod_chip_close(this->chip);
         exit(1);
@@ -24,7 +26,9 @@ StepperControl::StepperControl() {
 
     if (gpiod_line_request_output(this->stepLine, CONSUMER, 0) < 0 ||
         gpiod_line_request_output(this->dirLine, CONSUMER, 0) < 0 || 
-        gpiod_line_request_output(this->servoPowerLine, CONSUMER, 0) < 0) {
+        gpiod_line_request_output(this->servoPowerLine, CONSUMER, 0) < 0 ||
+        gpiod_line_request_output(this->buttonLedLine, CONSUMER, 0) < 0 ||
+        gpiod_line_request_input(this->buttonInputLine, CONSUMER) < 0) {
         fprintf(stderr, "Failed to request GPIO lines as outputs\n");
         gpiod_chip_close(this->chip);
         exit(1);
@@ -33,6 +37,7 @@ StepperControl::StepperControl() {
     gpiod_line_set_value(this->stepLine, 0);
     gpiod_line_set_value(this->dirLine, 0);
     gpiod_line_set_value(this->servoPowerLine, 0);
+    gpiod_line_set_value(this->buttonLedLine, 1);
 }
 
 StepperControl::~StepperControl() {
@@ -62,6 +67,26 @@ void StepperControl::step(int64_t steps) {
         gpiod_line_set_value(this->stepLine, 0);
         usleep(3000); // Adjust the delay as needed
     }
+}
+
+void StepperControl::activateLED() {
+    if (this->lightActive) {
+        return;
+    }
+    this->lightActive = true;
+    gpiod_line_set_value(this->buttonLedLine, 1);
+}
+
+void StepperControl::deactivateLED() {
+    if (!this->lightActive) {
+        return;
+    }
+    this->lightActive = false;
+    gpiod_line_set_value(this->buttonLedLine, 0);
+}
+
+bool StepperControl::isButtonPressed() {
+    return gpiod_line_get_value(this->buttonInputLine) == 0;
 }
 
 #endif

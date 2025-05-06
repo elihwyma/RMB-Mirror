@@ -18,35 +18,38 @@ int main(int argc, char* argv[]) {
 
     ServoControl control;
 
-    // Read in X and Y from CLI:
-    for (;;) {
-        std::string input;
-        std::cout << "Enter X and Y coordinates (or 'q' to quit, alternatively 's' to step): ";
-        std::getline(std::cin, input);
+    if (argc >= 2 && strcmp(argv[1], "debug") == 0) {
+        stepper.setServoPower(true);
+        stepper.step(100);
+        stepper.setServoPower(false);
 
-        if (input == "q") {
-            break;
+        for (;;) {
+            std::string input;
+            std::cout << "Enter X and Y coordinates (or 'q' to quit, alternatively 's' to step): ";
+            std::getline(std::cin, input);
+    
+            if (input == "q") {
+                break;
+            }
+            if (input == "s") {
+                stepper.step(100);
+                continue;
+            }
+            if (input == "ss") {
+                stepper.step(10000);
+                continue;
+            }
+            std::istringstream iss(input);
+            double x, y;
+            if (!(iss >> x >> y)) {
+                std::cerr << "Invalid input. Please enter two numbers." << std::endl;
+                continue;
+            }
+    
+            // Call the Interpolate function
+            control.interpolate(x, y);
         }
-        if (input == "s") {
-            stepper.step(100);
-            continue;
-        }
-        if (input == "ss") {
-            stepper.step(10000);
-            continue;
-        }
-        std::istringstream iss(input);
-        double x, y;
-        if (!(iss >> x >> y)) {
-            std::cerr << "Invalid input. Please enter two numbers." << std::endl;
-            continue;
-        }
-
-        // Call the Interpolate function
-        control.interpolate(x, y);
     }
-
-    exit(0);
 
     std::string landmarkModelPath = "face_landmarks.tflite";
     std::string detectionModelPath = "face_detection_short_range.tflite";
@@ -58,9 +61,7 @@ int main(int argc, char* argv[]) {
         detectionModelPath = "resources/" + detectionModelPath;
     }
 
-    fprintf(stdout, "1\n");
     LandmarkExtractor extractor(detectionModelPath, landmarkModelPath);
-    fprintf(stdout, "2\n");
     int cameraID = 0;
 
     for (int i = 1; i < argc - 1; i++) {
@@ -80,8 +81,28 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    // Main Program Loop
     cv::Mat frame;
-    while (1) {
+    bool pressed = false;
+    
+    for (;;) {
+        stepper.activateLED();
+
+        bool _pressed = stepper.isButtonPressed();
+        if (_pressed && pressed) {
+            // Button is still pressed
+            usleep(100000);
+            continue;
+        }
+        if (!_pressed) {
+            pressed = false;
+            continue;
+        }
+        pressed = true;
+        
+        // Deactivate Button to signify that work is happening
+        stepper.deactivateLED();
+
         if (!cameraCapture.read(frame)) {
             std::cerr << "Error reading frame." << std::endl;
             break;
@@ -89,12 +110,8 @@ int main(int argc, char* argv[]) {
 
         try {
             std::vector<cv::Point2i> landmarks = extractor.Process(frame);
+            fprintf(stdout, "Found a face\n");
 
-            // Create a new blank image to draw our contours
-            // We want a white background with the important detaits in black dots
-            frame = cv::Mat::zeros(frame.size(), frame.type());
-            // Draw a white background
-            frame.setTo(cv::Scalar(255, 255, 255));
             // Draw the important details in black dots
             /*
             const int importantIndexes[] = { 
@@ -105,27 +122,13 @@ int main(int argc, char* argv[]) {
                 263, 249, 390, 373, 374, 380, 381, 382, 362,
                 466, 388, 387, 386, 385, 384, 398,
             };*/
-            for (int i = 0; i < landmarks.size(); i++) {
-                cv::circle(frame, landmarks[i], 2, cv::Scalar(0, 0, 0), -1);
-            }
         } catch (const std::invalid_argument& e) {
             fprintf(stderr, "No Face!\n");
+            continue;
         }
-        #if GPIOD
-        #else
-        cv::imshow("Face Landmark Detection", frame);
-        if (cv::waitKey(1) == 'q') {
-            break;
-        }
-        #endif        
     }
 
     cameraCapture.release();
     
-    #if GPIOD
-    #else
-    cv::destroyAllWindows();
-    #endif
-
     return 0;
 }
