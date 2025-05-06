@@ -3,14 +3,13 @@
 # ================================
 FROM alpine:latest AS build
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl && mkdir -p /etc/apk/keys && curl -o /etc/apk/keys/portsman-anamy.rsa.pub https://raw.githubusercontent.com/elihwyma/portsman/refs/heads/main/portsman-anamy.rsa.pub
 RUN echo "https://portsman.anamy.gay" | tee -a /etc/apk/repositories 
-RUN mkdir -p /etc/apk/keys && curl -o /etc/apk/keys/portsman-anamy.rsa.pub https://raw.githubusercontent.com/elihwyma/portsman/refs/heads/main/portsman-anamy.rsa.pub
 
 RUN apk update && apk add --no-cache \
     cmake \
     git \
-    clang17 \
+    clang19 \
     pkgconf \
     opencv-dev \ 
     libstdc++ \
@@ -28,7 +27,7 @@ WORKDIR /build
 COPY . .
 
 # Generate the project
-RUN cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release
+RUN CXX=clang-19 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release
 
 # Build the project
 RUN cmake --build build
@@ -42,7 +41,10 @@ RUN cp -r /build/resources resources
 # ================================
 # Final image
 # ================================
-FROM alpine:latest AS build
+FROM alpine:latest
+
+RUN apk add --no-cache curl && mkdir -p /etc/apk/keys && curl -o /etc/apk/keys/portsman-anamy.rsa.pub https://raw.githubusercontent.com/elihwyma/portsman/refs/heads/main/portsman-anamy.rsa.pub
+RUN echo "https://portsman.anamy.gay" | tee -a /etc/apk/repositories 
 
 RUN apk update && apk add --no-cache \
     libopencv_core \

@@ -3,5 +3,5 @@
     "cmake.configureOnOpen": true,
     "cmake.buildDirectory": "${workspaceFolder}/build",
     "C_Cpp.intelliSenseEngine": "disabled",
-    "clangd.path": "/usr/lib/llvm17/bin/clangd"
+    "clangd.path": "/usr/lib/llvm19/bin/clangd"
 }

@@ -1,6 +1,6 @@
 {
     "build": { "dockerfile": "Dockerfile" },
-    "postStartCommand": "bash .devcontainer/configure.sh",
+    "postStartCommand": "sh .devcontainer/configure.sh",
     "customizations": {
         "vscode": {
             "extensions": [
