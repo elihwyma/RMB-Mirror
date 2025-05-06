@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
         pressed = true;
-        
+
         // Deactivate Button to signify that work is happening
         stepper.deactivateLED();
 
@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
             fprintf(stdout, "Found a face\n");
 
             // Draw the important details in black dots
-            /*
+            
             const int importantIndexes[] = { 
                 185, 40, 39, 37, 0, 267, 269, 270, 409,
                 61, 146, 91, 181, 84, 17, 314, 405, 321,
@@ -121,7 +121,70 @@ int main(int argc, char* argv[]) {
                 246, 161, 160, 159, 158, 157, 173,
                 263, 249, 390, 373, 374, 380, 381, 382, 362,
                 466, 388, 387, 386, 385, 384, 398,
-            };*/
+            };
+
+            std::vector<cv::Point2i> importantPoints;
+            for (int i = 0; i < sizeof(importantIndexes) / sizeof(importantIndexes[0]); i++) {
+                importantPoints.push_back(landmarks[importantIndexes[i]]);
+            }
+
+            // Calculate highest X, lowest X, highest Y, lowestY.
+            double lowestX = importantPoints[0].x;
+            double highestX = importantPoints[0].x;
+            double lowestY = importantPoints[0].y;
+            double highestY = importantPoints[0].y;
+
+            for (size_t i = 1; i < importantPoints.size(); i++) {
+                if (importantPoints[i].x < lowestX) {
+                    lowestX = importantPoints[i].x;
+                }
+                if (importantPoints[i].x > highestX) {
+                    highestX = importantPoints[i].x;
+                }
+                if (importantPoints[i].y < lowestY) {
+                    lowestY = importantPoints[i].y;
+                }
+                if (importantPoints[i].y > highestY) {
+                    highestY = importantPoints[i].y;
+                }
+            }
+
+            double xOffset = lowestX;
+            double yOffset = lowestY;
+            double xWidth = highestX - lowestX;
+            double yHeight = highestY - lowestY;
+
+            /* 
+            For debug purposes we're going to say our usable area is [
+                [-25, 100,],
+                [ 235, 235 ]
+            ]
+            */
+
+            #define LOWEST_X -25
+            #define LOWEST_Y 125
+            #define HIGHEST_X 235
+            #define HIGHEST_Y 235
+
+            double xScale = (HIGHEST_X - std::abs(LOWEST_X)) / xWidth;
+            double yScale = (HIGHEST_Y - LOWEST_Y) / yHeight;
+
+            double largestScale = std::max(xScale, yScale);
+
+            std::vector<cv::Point2i> scaledPoints;
+            for (size_t i = 0; i < importantPoints.size(); i++) {
+                scaledPoints.push_back(cv::Point2i(
+                    (importantPoints[i].x - xOffset) * largestScale,
+                    ((importantPoints[i].y - yOffset) * largestScale) + 100
+                ));
+            }
+
+            for (size_t i = 0; i < scaledPoints.size(); i++) {
+                fprintf(stdout, "Going to %d, %d\n", scaledPoints[i].x, scaledPoints[i].y);
+                control.interpolate(scaledPoints[i].x, scaledPoints[i].y);
+            }
+            stepper.step(300);
+            
         } catch (const std::invalid_argument& e) {
             fprintf(stderr, "No Face!\n");
             continue;
