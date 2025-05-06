@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
         }
 
         // Call the Interpolate function
-        control.setCoordinatePosition(x, y);
+        control.interpolate(x, y);
     }
 
     exit(0);

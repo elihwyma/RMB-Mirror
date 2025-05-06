@@ -11,8 +11,8 @@ RUN mkdir -p /etc/apk/keys && curl -o /etc/apk/keys/portsman-anamy.rsa.pub https
 RUN apk update && apk add --no-cache \
     cmake \
     git \
-    clang17 \
-    clang17-extra-tools \
+    clang19 \
+    clang19-extra-tools \
     pkgconf \
     opencv-dev \ 
     libstdc++ \

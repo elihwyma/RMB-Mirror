@@ -40,9 +40,6 @@
 
 using namespace dynamixel;
 
-float currentx;
-float currenty;
-
 std::string ServoControl::errorDescription(int error) {
     return "";
 }
@@ -79,7 +76,8 @@ ServoControl::ServoControl() {
         exit(1);
     }
     fprintf(stdout, "Homing Servos...\n");
-    setPair(512, 512);
+
+    setCoordinatePosition(0, 250);
 }
 
 void ServoControl::getPortName(std::string *port_name) {
@@ -295,6 +293,13 @@ uint16_t ServoControl::angleToPosition(double degrees) {
 int16_t ServoControl::setCoordinatePosition(double x, double y) {
   fprintf(stdout, "X: %f, Y: %f\n", x, y);
 
+  if (this->currentX == x && this->currentY == y) {
+    fprintf(stdout, "Already at target position\n");
+    return 0;
+  }
+
+  this->currentX = x;
+  this->currentY = y;
 
   double distanceSquared = x * x + y * y;
   double distance = sqrt(distanceSquared);
@@ -334,36 +339,24 @@ int16_t ServoControl::setCoordinatePosition(double x, double y) {
   return 0;
 }
 
-void ServoControl::Interpolate(float targetx, float targety) {
-  /*
-  if (abs(targetx - currentx) > abs(targety - currenty)){
-    if (currentx < targetx){
-      for (int x = currentx; x < targetx; x + 0.2){
-        float y = m * x + c;
-        InverseKinematics(x, y);
-      }
-    }
-    else (currentx > targetx){
-      for (int x = currentx; x > targetx; x - 0.2){
-        float y = m * x + c;
-        InverseKinematics(x, y);
-      }
-    }
+int16_t ServoControl::interpolate(double targetx, double targety) {
+  double diff_x = targetx - this->currentX;
+  double diff_y = targety - this->currentY;
+  size_t steps = std::max(std::abs(diff_x), std::abs(diff_y)) / 10;
+
+  double stepX = diff_x / steps;
+  double stepY = diff_y / steps;
+
+  fprintf(stdout, "Interpolating to %f, %f %f %f\n", targetx, targety, stepX, stepY);
+
+  for (size_t i = 0; i < steps; ++i) {
+    double x = this->currentX + stepX;
+    double y = this->currentY + stepY;
+    setCoordinatePosition(x, y);
   }
-  else{
-    if (currenty < targety){
-      for (int y = currenty; y < targety; y + 0.2){
-        float x = (y - c)/m;
-        InverseKinematics(x, y);
-      }
-    } else if (currenty > targety) {
-      for (int y = currenty; y > targety; y - 0.2){
-        float x = (y - c)/m;
-        InverseKinematics(x, y);
-      }
-    }
-  }
-    */
+  // Ensure we didn't fall fictim to poor floating point handling
+  setCoordinatePosition(targetx, targety);
+  return 0;
 }
 
 int16_t ServoControl::raisePen() {
@@ -385,5 +378,5 @@ int16_t ServoControl::dropPen() {
 }
 
 int16_t ServoControl::calibratePen() {
-  
+  return 0;
 }
