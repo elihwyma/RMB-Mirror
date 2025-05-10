@@ -1,5 +1,19 @@
 import cv2
 import mediapipe as mp
+import os
+
+# New Line == Lift Pen
+demo_points = [
+    70, 63, 105, 66, 107, 55, 65, 52, 53, # Left Eye Brow
+    383, 300, 293, 334, 296, 336, 285, 295, 282, 283, # Right Eye Brow
+    414, 286, 258, 257, 259, 260, 467, 359, 381, 380, 374, 373, 390, 249, # Right Eye
+    190, 56, 28, 27, 29, 30, 247, 33, 7, 163, 144, 145, 153, 173, # Left Eye
+    193, 245, 188, 174, 236, 198, 209, 49, 64, 75, 60, 125, 2, 250, 290, 305, 327, 278, 279, 429, 420, 456, 399, 412, 465, 417, # Nose
+    61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314, 17, 84, 181, 91, 146, # Outline Mouth
+    10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109 # Face Outline
+]
+
+demo_mode = len(os.sys.argv) > 1 and os.sys.argv[1] == "demo"
 
 # Initialize MediaPipe Face Mesh
 mp_face_mesh = mp.solutions.face_mesh
@@ -47,10 +61,17 @@ while cap.isOpened():
 
     # Prepare landmark positions for mouse interaction
     last_landmarks = []
-
+    
+    if demo_mode:
+        # Set the image to all white
+        frame.fill(0)
+    
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
             for idx, landmark in enumerate(face_landmarks.landmark):
+                if demo_mode and idx not in demo_points:
+                    continue
+                
                 ih, iw, _ = frame.shape
                 x, y = int(landmark.x * iw), int(landmark.y * ih)
                 last_landmarks.append((x, y))
