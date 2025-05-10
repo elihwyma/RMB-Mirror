@@ -20,3 +20,9 @@ pip install -r requirements.txt
 ```
 python main.py
 ```
+
+To Run In Demo Mode:
+
+```
+python main.py demo
+```
