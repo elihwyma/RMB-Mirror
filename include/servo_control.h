@@ -36,4 +36,6 @@ private:
 
     double currentX = 0;
     double currentY = 0;
+
+    bool penDropped = false;
 };

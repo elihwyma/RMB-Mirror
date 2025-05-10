@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <cstdio>
 #include <stdexcept>
 #include <stdio.h>
@@ -17,6 +18,8 @@ int main(int argc, char* argv[]) {
     stepper.setServoPower(true);
 
     ServoControl control;
+    
+
 
     if (argc >= 2 && strcmp(argv[1], "debug") == 0) {
         stepper.setServoPower(true);
@@ -51,6 +54,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    control.calibratePen();
+
     std::string landmarkModelPath = "face_landmarks.tflite";
     std::string detectionModelPath = "face_detection_short_range.tflite";
 
@@ -82,13 +87,11 @@ int main(int argc, char* argv[]) {
     }
 
     // Main Program Loop
-    cv::Mat frame;
     bool pressed = false;
-    
     for (;;) {
         stepper.activateLED();
-
         bool _pressed = stepper.isButtonPressed();
+
         if (_pressed && pressed) {
             // Button is still pressed
             usleep(100000);
@@ -103,6 +106,8 @@ int main(int argc, char* argv[]) {
         // Deactivate Button to signify that work is happening
         stepper.deactivateLED();
 
+        cv::Mat frame;
+
         if (!cameraCapture.read(frame)) {
             std::cerr << "Error reading frame." << std::endl;
             break;
@@ -112,29 +117,40 @@ int main(int argc, char* argv[]) {
             std::vector<cv::Point2i> landmarks = extractor.Process(frame);
             fprintf(stdout, "Found a face\n");
 
-            // Draw the important details in black dots
-            
-            const int importantIndexes[] = { 
-                185, 40, 39, 37, 0, 267, 269, 270, 409,
-                61, 146, 91, 181, 84, 17, 314, 405, 321,
-                375, 291, 33, 7, 163, 144, 145, 153, 154, 155, 133,
-                246, 161, 160, 159, 158, 157, 173,
-                263, 249, 390, 373, 374, 380, 381, 382, 362,
-                466, 388, 387, 386, 385, 384, 398,
+            const uint16_t leftEye[] = {
+                398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381 
             };
+            const uint16_t rightEye[] = {
+                173, 157, 158, 159, 160, 161, 246, 7, 163, 144, 145, 153, 154
+            };
+            const uint16_t mouth[] = {
+                14, 317, 402, 318, 324, 292, 308, 407, 415, 272, 310, 271, 311, 268, 12, 38, 81, 191, 80, 183, 62, 95, 88, 178, 87
+            };
+            const uint16_t leftEyeSize = sizeof(leftEye) / sizeof(leftEye[0]);
+            const uint16_t rightEyeSize = sizeof(rightEye) / sizeof(rightEye[0]);
+            const uint16_t mouthSize = sizeof(mouth) / sizeof(mouth[0]);
+            const uint16_t importantPointsSize = leftEyeSize + rightEyeSize + mouthSize;
+            
+            cv::Point2i importantPoints[importantPointsSize];
+            cv::Point2i scaledPoints[importantPointsSize];
 
-            std::vector<cv::Point2i> importantPoints;
-            for (int i = 0; i < sizeof(importantIndexes) / sizeof(importantIndexes[0]); i++) {
-                importantPoints.push_back(landmarks[importantIndexes[i]]);
+            for (size_t i = 0; i < leftEyeSize; i++) {
+                importantPoints[i] = landmarks[leftEye[i]];
             }
-
+            for (size_t i = 0; i < rightEyeSize; i++) {
+                importantPoints[i + leftEyeSize] = landmarks[rightEye[i]];
+            }
+            for (size_t i = 0; i < mouthSize; i++) {
+                importantPoints[i + leftEyeSize + rightEyeSize] = landmarks[mouth[i]];
+            }
+            
             // Calculate highest X, lowest X, highest Y, lowestY.
             double lowestX = importantPoints[0].x;
             double highestX = importantPoints[0].x;
             double lowestY = importantPoints[0].y;
             double highestY = importantPoints[0].y;
 
-            for (size_t i = 1; i < importantPoints.size(); i++) {
+            for (uint16_t i = 1; i < importantPointsSize; i++) {
                 if (importantPoints[i].x < lowestX) {
                     lowestX = importantPoints[i].x;
                 }
@@ -154,7 +170,7 @@ int main(int argc, char* argv[]) {
             double xWidth = highestX - lowestX;
             double yHeight = highestY - lowestY;
 
-            /* 
+            /*
             For debug purposes we're going to say our usable area is [
                 [-25, 100,],
                 [ 235, 235 ]
@@ -171,20 +187,42 @@ int main(int argc, char* argv[]) {
 
             double largestScale = std::max(xScale, yScale);
 
-            std::vector<cv::Point2i> scaledPoints;
-            for (size_t i = 0; i < importantPoints.size(); i++) {
-                scaledPoints.push_back(cv::Point2i(
+            for (size_t i = 0; i < importantPointsSize; i++) {
+                scaledPoints[i] = cv::Point2i(
                     (importantPoints[i].x - xOffset) * largestScale,
                     ((importantPoints[i].y - yOffset) * largestScale) + 100
-                ));
+                );
             }
+            
+            control.raisePen();
+            control.interpolate(scaledPoints[0].x, scaledPoints[0].y);
+            control.dropPen();
 
-            for (size_t i = 0; i < scaledPoints.size(); i++) {
+            for (uint16_t i = 1; i < leftEyeSize; i++) {
                 fprintf(stdout, "Going to %d, %d\n", scaledPoints[i].x, scaledPoints[i].y);
                 control.interpolate(scaledPoints[i].x, scaledPoints[i].y);
             }
+
+            control.raisePen();
+            control.interpolate(scaledPoints[leftEyeSize].x, scaledPoints[leftEyeSize].y);
+            control.dropPen();
+
+            for (uint16_t i = leftEyeSize + 1; i < leftEyeSize + rightEyeSize; i++) {
+                fprintf(stdout, "Going to %d, %d\n", scaledPoints[i].x, scaledPoints[i].y);
+                control.interpolate(scaledPoints[i].x, scaledPoints[i].y);
+            }
+
+            control.raisePen();
+            control.interpolate(scaledPoints[leftEyeSize + rightEyeSize].x, scaledPoints[leftEyeSize + rightEyeSize].y);
+            control.dropPen();
+
+            for (uint16_t i = leftEyeSize + rightEyeSize + 1; i < leftEyeSize + rightEyeSize + mouthSize; i++) {
+                fprintf(stdout, "Going to %d, %d\n", scaledPoints[i].x, scaledPoints[i].y);
+                control.interpolate(scaledPoints[i].x, scaledPoints[i].y);
+            }
+            control.raisePen();
+                
             stepper.step(300);
-            
         } catch (const std::invalid_argument& e) {
             fprintf(stderr, "No Face!\n");
             continue;

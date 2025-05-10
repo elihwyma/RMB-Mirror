@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <sys/types.h>
 #include <cmath>
+#include <unistd.h>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -78,6 +79,7 @@ ServoControl::ServoControl() {
     fprintf(stdout, "Homing Servos...\n");
 
     setCoordinatePosition(0, 250);
+    setWheelSpeed(3, 0, 0);
 }
 
 void ServoControl::getPortName(std::string *port_name) {
@@ -360,23 +362,53 @@ int16_t ServoControl::interpolate(double targetx, double targety) {
 }
 
 int16_t ServoControl::raisePen() {
-  int ret = setPosition(3, 512);
+  if (!this->penDropped) {
+    fprintf(stdout, "Pen already raised\n");
+    return 0;
+  }
+  int ret = setWheelSpeed(3, 0, 1023);
   if (ret != 0) {
     fprintf(stderr, "Failed to raise pen\n");
     return -1;
   }
-  return 0;
+  sleep(2);
+  ret = setWheelSpeed(3, 1, 0);
+  if (ret != 0) {
+    fprintf(stderr, "Failed to raise pen\n");
+    return -1;
+  }
+  this->penDropped = false;
+  return ret;
 }
 
 int16_t ServoControl::dropPen() {
-  int ret = setPosition(3, 1023);
-  if (ret != 0) {
+  if (this->penDropped) {
+    fprintf(stdout, "Pen already dropped\n");
+    return 0;
+  }
+  int ret = setWheelSpeed(3, 1, 1023);  
+  if (ret) {
     fprintf(stderr, "Failed to drop pen\n");
     return -1;
   }
-  return 0;
+  sleep(2);
+  ret = setWheelSpeed(3, 0, 0);
+  if (ret) {
+    fprintf(stderr, "Failed to drop pen\n");
+    return -1;
+  }
+  this->penDropped = true;
+  return ret;
 }
 
 int16_t ServoControl::calibratePen() {
-  return 0;
+  int ret = setWheelSpeed(3, 0, 1023);
+  // Sleep for 20 seconds
+  sleep(20);
+  ret = setWheelSpeed(3, 1, 1023);
+  sleep(17);
+  ret = setWheelSpeed(3, 0, 0);
+  this->penDropped = true;
+  ret = raisePen();
+  return ret;
 }
