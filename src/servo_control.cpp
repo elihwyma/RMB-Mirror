@@ -80,6 +80,9 @@ ServoControl::ServoControl() {
 
     setCoordinatePosition(0, 250);
     setWheelSpeed(3, 0, 0);
+    // Set 50% to L1 and L2
+    setWheelSpeed(2, 0, 512);
+    setWheelSpeed(1, 0, 512);
 }
 
 void ServoControl::getPortName(std::string *port_name) {

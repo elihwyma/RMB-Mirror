@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
         try {
             std::vector<cv::Point2i> landmarks = extractor.Process(frame);
             fprintf(stdout, "Found a face\n");
-            
+
             const std::vector<std::vector<uint16_t>> landmarkIndexes = {
                 { // Left Eye Brow
                     70, 63, 105, 66, 107, 55, 65, 52, 53
@@ -183,17 +183,13 @@ int main(int argc, char* argv[]) {
             double xWidth = highestX - lowestX;
             double yHeight = highestY - lowestY;
 
-            /*
-            For debug purposes we're going to say our usable area is [
-                [-25, 100,],
-                [ 235, 235 ]
-            ]
-            */
+            #define LOWEST_X -80
+            #define LOWEST_Y 150
+            #define HIGHEST_X 215
+            #define HIGHEST_Y 250
 
-            #define LOWEST_X -25
-            #define LOWEST_Y 125
-            #define HIGHEST_X 235
-            #define HIGHEST_Y 235
+            // Output Mat is to help debug
+            cv::Mat outputMat(HIGHEST_Y - LOWEST_Y, HIGHEST_X - LOWEST_X, CV_8UC3, cv::Scalar(0, 0, 0));
 
             double xScale = (HIGHEST_X - std::abs(LOWEST_X)) / xWidth;
             double yScale = (HIGHEST_Y - LOWEST_Y) / yHeight;
@@ -202,13 +198,18 @@ int main(int argc, char* argv[]) {
 
             for (size_t i = 0; i < landmarkIndexes.size(); i++) {
                 for (size_t j = 0; j < landmarkIndexes[i].size(); j++) {
-                    scaledPoints[i][j] = cv::Point2i(
+                    cv::Point2i outPoint = cv::Point2i(
                         (importantPoints[i][j].x - xOffset) * largestScale,
-                        ((importantPoints[i][j].y - yOffset) * largestScale) + 100
+                        ((importantPoints[i][j].y - yOffset) * largestScale)
                     );
+                    cv::circle(outputMat, outPoint, 2, cv::Scalar(255, 0, 0), -1);
+                    outPoint.y += LOWEST_Y;
+                    scaledPoints[i][j] = outPoint;
                 }
             }
-
+            // Write the debug image to disk as a png
+            cv::imwrite("output.png", outputMat);
+            
             for (size_t i = 0; i < landmarkIndexes.size(); i++) {
                 control.raisePen();
                 control.setCoordinatePosition(scaledPoints[i][0].x, scaledPoints[i][0].y);
@@ -216,9 +217,8 @@ int main(int argc, char* argv[]) {
                 for (size_t j = 1; j < landmarkIndexes[i].size(); j++) {
                     control.interpolate(scaledPoints[i][j].x, scaledPoints[i][j].y);
                 }
-                
+                control.interpolate(scaledPoints[i][0].x, scaledPoints[i][0].y);
             }
-
             control.raisePen();
             stepper.step(500);
         } catch (const std::invalid_argument& e) {
