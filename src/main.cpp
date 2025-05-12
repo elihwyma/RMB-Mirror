@@ -12,13 +12,21 @@
 #include <unistd.h>
 #include <vector>
 
+#define LOWEST_X -80
+#define LOWEST_Y 150
+#define HIGHEST_X 200
+#define HIGHEST_Y 250
+
+#define MAX_WIDTH (HIGHEST_X - LOWEST_X)
+#define MAX_HEIGHT (HIGHEST_Y - LOWEST_Y)
+
 int main(int argc, char* argv[]) {
     printf("Hello, World!\n");
 
     StepperControl stepper;
     stepper.setServoPower(true);
 
-    ServoControl control;
+    ServoControl control(stepper);
     
     if (argc >= 2 && strcmp(argv[1], "debug") == 0) {
         stepper.setServoPower(true);
@@ -183,26 +191,24 @@ int main(int argc, char* argv[]) {
             double xWidth = highestX - lowestX;
             double yHeight = highestY - lowestY;
 
-            #define LOWEST_X -80
-            #define LOWEST_Y 150
-            #define HIGHEST_X 215
-            #define HIGHEST_Y 250
-
             // Output Mat is to help debug
-            cv::Mat outputMat(HIGHEST_Y - LOWEST_Y, HIGHEST_X - LOWEST_X, CV_8UC3, cv::Scalar(0, 0, 0));
+            cv::Mat outputMat(HIGHEST_Y - LOWEST_Y,
+                 HIGHEST_X - LOWEST_X,
+                  CV_8UC3, cv::Scalar(0, 0, 0));
 
-            double xScale = (HIGHEST_X - std::abs(LOWEST_X)) / xWidth;
-            double yScale = (HIGHEST_Y - LOWEST_Y) / yHeight;
+            double xScale = MAX_WIDTH / xWidth;
+            double yScale = MAX_HEIGHT / yHeight;
 
             double largestScale = std::max(xScale, yScale);
 
             for (size_t i = 0; i < landmarkIndexes.size(); i++) {
                 for (size_t j = 0; j < landmarkIndexes[i].size(); j++) {
                     cv::Point2i outPoint = cv::Point2i(
-                        (importantPoints[i][j].x - xOffset) * largestScale,
-                        ((importantPoints[i][j].y - yOffset) * largestScale)
+                        (importantPoints[i][j].x - xOffset) / largestScale,
+                        ((importantPoints[i][j].y - yOffset) / largestScale)
                     );
                     cv::circle(outputMat, outPoint, 2, cv::Scalar(255, 0, 0), -1);
+                    outPoint.x += LOWEST_X;
                     outPoint.y += LOWEST_Y;
                     scaledPoints[i][j] = outPoint;
                 }
@@ -217,10 +223,12 @@ int main(int argc, char* argv[]) {
                 for (size_t j = 1; j < landmarkIndexes[i].size(); j++) {
                     control.interpolate(scaledPoints[i][j].x, scaledPoints[i][j].y);
                 }
+                fprintf(stdout, "Going back to start %zu\n", i);    
                 control.interpolate(scaledPoints[i][0].x, scaledPoints[i][0].y);
             }
             control.raisePen();
-            stepper.step(500);
+            stepper.step(600);
+            control.calibratePen();
         } catch (const std::invalid_argument& e) {
             fprintf(stderr, "No Face!\n");
             continue;

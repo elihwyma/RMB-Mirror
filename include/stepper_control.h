@@ -1,4 +1,4 @@
-#if GPIOD
+#pragma once
 
 #include <gpiod.h>
 #include <unistd.h>
@@ -10,6 +10,7 @@
 #define SERVO_POWER 20
 #define BUTTON_LED 16
 #define BUTTON_INPUT 21
+#define PEN_TOUCHING 27
 
 class StepperControl {
 public:
@@ -23,6 +24,7 @@ public:
     void deactivateLED();
 
     bool isButtonPressed();
+    bool isPenTouching();
 private:
     struct gpiod_chip *chip;
     struct gpiod_line *stepLine;
@@ -30,8 +32,7 @@ private:
     struct gpiod_line *servoPowerLine;
     struct gpiod_line *buttonLedLine;
     struct gpiod_line *buttonInputLine;
+    struct gpiod_line *penTouchingLine;
 
-    bool lightActive = true;
+    bool lightActive = false;
 };
-
-#endif

@@ -1,12 +1,14 @@
 // Heavily based c++/example/protocol1.0/read_write/read_write.cpp
+#pragma once
 
 #include <stdio.h>
 #include <string>
+#include <stepper_control.h>
 
 #include <libdxl/dynamixel_sdk.h>
 class ServoControl {
 public:
-    ServoControl();
+    ServoControl(StepperControl &stepper);
 
     static void getPortName(std::string *port_name);
     static std::string errorDescription(int error);
@@ -26,6 +28,7 @@ public:
 private:
     dynamixel::PortHandler *portHandler;
     dynamixel::PacketHandler *packetHandler;
+    StepperControl &stepper;
 
     int16_t getPosition(uint8_t id);
     int16_t read2ByteTxRx(uint8_t id, uint16_t address, uint16_t *data);

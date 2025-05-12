@@ -26,7 +26,7 @@
 #define TORQUE_DISABLE                  0                   // Value for disabling the torque
 
 #define L1 165.0  // mm
-#define L2 175.103  // mm
+#define L2 165.0  // mm
 #define SERVO_MIN 0
 #define SERVO_MAX 1023
 #define SERVO_RANGE_DEGREES 300.0
@@ -45,7 +45,7 @@ std::string ServoControl::errorDescription(int error) {
     return "";
 }
 
-ServoControl::ServoControl() {
+ServoControl::ServoControl(StepperControl &stepper) : stepper(stepper) {
     std::string port_name;
     getPortName(&port_name);
 
@@ -374,7 +374,7 @@ int16_t ServoControl::raisePen() {
     fprintf(stderr, "Failed to raise pen\n");
     return -1;
   }
-  sleep(2);
+  usleep(2000000);
   ret = setWheelSpeed(3, 1, 0);
   if (ret != 0) {
     fprintf(stderr, "Failed to raise pen\n");
@@ -394,7 +394,7 @@ int16_t ServoControl::dropPen() {
     fprintf(stderr, "Failed to drop pen\n");
     return -1;
   }
-  sleep(2);
+  usleep(2000000);
   ret = setWheelSpeed(3, 0, 0);
   if (ret) {
     fprintf(stderr, "Failed to drop pen\n");
@@ -409,7 +409,8 @@ int16_t ServoControl::calibratePen() {
   // Sleep for 20 seconds
   sleep(20);
   ret = setWheelSpeed(3, 1, 1023);
-  sleep(17);
+  // 17 seconds
+  usleep(17000000);
   ret = setWheelSpeed(3, 0, 0);
   this->penDropped = true;
   ret = raisePen();
