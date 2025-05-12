@@ -115,12 +115,17 @@ int main(int argc, char* argv[]) {
         stepper.deactivateLED();
 
         cv::Mat frame;
-
-        if (!cameraCapture.read(frame)) {
+        
+        int err = cameraCapture.read(frame);
+        if (err == 0) {
             std::cerr << "Error reading frame." << std::endl;
             break;
         }
-
+        if (frame.empty()) {
+            std::cerr << "Error: Empty frame." << std::endl;
+            break;
+        }
+        
         try {
             std::vector<cv::Point2i> landmarks = extractor.Process(frame);
             fprintf(stdout, "Found a face\n");
@@ -201,6 +206,7 @@ int main(int argc, char* argv[]) {
             double yScale = MAX_HEIGHT / yHeight;
 
             double largestScale = std::max(xScale, yScale);
+            printf("Largest Scale: %f, xScale: %f, yScale: %f\n", largestScale, xScale, yScale);
 
             for (size_t i = 0; i < landmarkIndexes.size(); i++) {
                 for (size_t j = 0; j < landmarkIndexes[i].size(); j++) {
