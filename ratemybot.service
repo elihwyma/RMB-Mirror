@@ -9,7 +9,7 @@ StartLimitIntervalSec=5
 [Service]
 Restart=always
 WorkingDirectory=/home/amy/comp209-team
-ExecStart=/usr/bin/docker-compose up runtime
+ExecStart=/usr/bin/docker run --privileged --mount type=bind,source=/dev,target=/dev docker.github.falmouth.ac.uk/aw295676/comp209-team/runtime:dev
 
 [Install]
 WantedBy=default.target

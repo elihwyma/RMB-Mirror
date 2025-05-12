@@ -51,11 +51,12 @@ RUN apk update && apk add --no-cache \
     libopencv_videoio \ 
     libopencv_imgcodecs \
     libstdc++ \
-    i2c-tools \
-    libgpiod=1.6.5-r0 \
-    libdxl \
-    tensorflowlite \
-    flatbuffers
+    samurai \
+    i2c-tools-dev \
+    libgpiod-dev=1.6.5-r0 \
+    libdxl-dev \
+    tensorflowlite-dev \
+    flatbuffers-dev
 
 # Set up the runtime environment
 WORKDIR /app
