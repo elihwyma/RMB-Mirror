@@ -48,6 +48,9 @@ RUN echo "https://portsman.anamy.gay" | tee -a /etc/apk/repositories
 
 RUN apk update && apk add --no-cache \
     libopencv_core \
+    libopencv_videoio \ 
+    libopencv_imgcodecs \
+    libopencv_imgproc \
     libstdc++ \
     i2c-tools \
     libgpiod=1.6.5-r0 \
