@@ -86,13 +86,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    printf("Camera ID: %d\n", cameraID);
     cv::VideoCapture cameraCapture(cameraID);
-   
+
     if (!cameraCapture.isOpened()) {
         std::cerr << "Error opening camera." << std::endl;
         return -1;
     }
-
+    printf("Camera opened successfully.\n");
     // Main Program Loop
     bool pressed = false;
     for (;;) {
