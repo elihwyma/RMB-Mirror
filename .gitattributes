@@ -33,3 +33,4 @@ media/IMG_5068.JPG filter=lfs diff=lfs merge=lfs -text
 media/IMG_5231.DNG filter=lfs diff=lfs merge=lfs -text
 media/20250512_163318.jpg filter=lfs diff=lfs merge=lfs -text
 media/IMG_5073.jpeg filter=lfs diff=lfs merge=lfs -text
+media/CleanShot[[:space:]]2025-05-10[[:space:]]at[[:space:]]22.36.38@2x.png filter=lfs diff=lfs merge=lfs -text
