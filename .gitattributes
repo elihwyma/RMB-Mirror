@@ -1,2 +1,4 @@
 *.mov filter=lfs diff=lfs merge=lfs -text
 *.f3d binary
+media/IMG_5227.jpeg filter=lfs diff=lfs merge=lfs -text
+media/IMG_5226.MOV filter=lfs diff=lfs merge=lfs -text

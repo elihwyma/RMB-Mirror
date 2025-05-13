@@ -27,7 +27,7 @@ WORKDIR /build
 COPY . .
 
 # Generate the project
-RUN CXX=clang-19 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release
+RUN CXX=clang-19 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Debug
 
 # Build the project
 RUN cmake --build build
@@ -50,7 +50,6 @@ RUN apk update && apk add --no-cache \
     libopencv_core \
     libopencv_videoio \ 
     libopencv_imgcodecs \
-    libopencv_imgproc \
     libstdc++ \
     i2c-tools \
     libgpiod=1.6.5-r0 \
