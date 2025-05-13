@@ -7,7 +7,7 @@ StepperControl::StepperControl() {
     this->chip = gpiod_chip_open_by_name("gpiochip0");
     if (!this->chip) {
         fprintf(stderr, "Failed to open GPIO chip\n");
-        exit(1);
+        std::raise(SIGTERM);
     }
 
     this->stepLine = gpiod_chip_get_line(this->chip, STEP_PIN);
@@ -20,7 +20,7 @@ StepperControl::StepperControl() {
     if (!this->stepLine || !this->dirLine || !this->servoPowerLine || !this->buttonLedLine || !this->buttonInputLine) {
         fprintf(stderr, "Failed to get GPIO lines\n");
         gpiod_chip_close(this->chip);
-        exit(1);
+        std::raise(SIGTERM);
     }
 
     if (gpiod_line_request_output(this->stepLine, CONSUMER, 0) < 0 ||
@@ -31,7 +31,7 @@ StepperControl::StepperControl() {
         gpiod_line_request_input(this->penTouchingLine, CONSUMER) < 0) {
         fprintf(stderr, "Failed to request GPIO lines as outputs\n");
         gpiod_chip_close(this->chip);
-        exit(1);
+        std::exit(SIGABRT);
     }
 
     gpiod_line_set_value(this->stepLine, 0);

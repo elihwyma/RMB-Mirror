@@ -12,16 +12,36 @@
 #include <unistd.h>
 #include <vector>
 
-#define LOWEST_X -80
+
+#define LOWEST_X -75
 #define LOWEST_Y 150
-#define HIGHEST_X 200
-#define HIGHEST_Y 250
+#define HIGHEST_X 185
+#define HIGHEST_Y 220
 
 #define MAX_WIDTH (HIGHEST_X - LOWEST_X)
 #define MAX_HEIGHT (HIGHEST_Y - LOWEST_Y)
 
 int main(int argc, char* argv[]) {
     printf("Hello, World!\n");
+
+    int cameraID = 0;
+    bool dryRun = false;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-v") == 0 && i + 1 < argc) {
+            try {
+                cameraID = atoi(argv[i + 1]);
+            } catch(...) {
+                // 
+            }
+        }
+        if (strcmp(argv[i], "-n") == 0) {
+            dryRun = true;
+            printf("Dry Run :)\n");
+        }
+    }
+
+    cv::Mat frame;
 
     StepperControl stepper;
     stepper.setServoPower(true);
@@ -61,7 +81,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    control.calibratePen();
+    if (!dryRun) {
+        control.calibratePen();
+    }
+    
 
     std::string landmarkModelPath = "face_landmarks.tflite";
     std::string detectionModelPath = "face_detection_short_range.tflite";
@@ -74,26 +97,7 @@ int main(int argc, char* argv[]) {
     }
 
     LandmarkExtractor extractor(detectionModelPath, landmarkModelPath);
-    int cameraID = 0;
 
-    for (int i = 1; i < argc - 1; i++) {
-        if (strcmp(argv[i], "-v") == 0) {
-            try {
-                cameraID = atoi(argv[i + 1]);
-            } catch(...) {
-                // 
-            }
-        }
-    }
-
-    printf("Camera ID: %d\n", cameraID);
-    cv::VideoCapture cameraCapture(cameraID);
-
-    if (!cameraCapture.isOpened()) {
-        std::cerr << "Error opening camera." << std::endl;
-        return -1;
-    }
-    printf("Camera opened successfully.\n");
     // Main Program Loop
     bool pressed = false;
     for (;;) {
@@ -114,21 +118,29 @@ int main(int argc, char* argv[]) {
         // Deactivate Button to signify that work is happening
         stepper.deactivateLED();
 
-        cv::Mat frame;
-        
-        int err = cameraCapture.read(frame);
-        if (err == 0) {
-            std::cerr << "Error reading frame." << std::endl;
-            break;
+        cv::VideoCapture cameraCapture(cameraID);
+
+        if (!cameraCapture.isOpened()) {
+            std::cerr << "Error opening camera." << std::endl;
+            return -1;
         }
+
+        printf("Camera ID: %d\n", cameraID);
+        uint16_t frameCount = 0;
+    recapture:
+        frameCount++;
+        cameraCapture >> frame;
+    
         if (frame.empty()) {
             std::cerr << "Error: Empty frame." << std::endl;
+            cameraCapture.release();
             break;
         }
         
         try {
             std::vector<cv::Point2i> landmarks = extractor.Process(frame);
             fprintf(stdout, "Found a face\n");
+            cameraCapture.release();
 
             const std::vector<std::vector<uint16_t>> landmarkIndexes = {
                 { // Left Eye Brow
@@ -194,27 +206,30 @@ int main(int argc, char* argv[]) {
 
             double xOffset = lowestX;
             double yOffset = lowestY;
+
             double xWidth = highestX - lowestX;
             double yHeight = highestY - lowestY;
 
             // Output Mat is to help debug
-            cv::Mat outputMat(HIGHEST_Y - LOWEST_Y,
-                 HIGHEST_X - LOWEST_X,
+            cv::Mat outputMat(MAX_HEIGHT,
+                 MAX_WIDTH,
                   CV_8UC3, cv::Scalar(0, 0, 0));
 
             double xScale = MAX_WIDTH / xWidth;
             double yScale = MAX_HEIGHT / yHeight;
 
-            double largestScale = std::max(xScale, yScale);
-            printf("Largest Scale: %f, xScale: %f, yScale: %f\n", largestScale, xScale, yScale);
+            printf("Lowest X: %f, Highest X: %f, Lowest Y: %f, Highest Y: %f\n", lowestX, highestX, lowestY, highestY);
+
+            double largestScale = std::min(xScale, yScale);
+            printf("Largest Scale: %f, xScale: %f, yScale: %f, %f %f\n", largestScale, xScale, yScale, xWidth, yHeight);
 
             for (size_t i = 0; i < landmarkIndexes.size(); i++) {
                 for (size_t j = 0; j < landmarkIndexes[i].size(); j++) {
                     cv::Point2i outPoint = cv::Point2i(
-                        (importantPoints[i][j].x - xOffset) / largestScale,
-                        ((importantPoints[i][j].y - yOffset) / largestScale)
+                        (importantPoints[i][j].x - lowestX) * largestScale,
+                        ((importantPoints[i][j].y - lowestY) * largestScale)
                     );
-                    cv::circle(outputMat, outPoint, 2, cv::Scalar(255, 0, 0), -1);
+                    cv::circle(outputMat, outPoint, 1, cv::Scalar(255, 0, 0), -1);
                     outPoint.x += LOWEST_X;
                     outPoint.y += LOWEST_Y;
                     scaledPoints[i][j] = outPoint;
@@ -223,26 +238,34 @@ int main(int argc, char* argv[]) {
             // Write the debug image to disk as a png
             cv::imwrite("output.png", outputMat);
             
+            if (dryRun) {
+                fprintf(stdout, "Dry run, skipping pen control\n");
+                continue;
+            }
+
             for (size_t i = 0; i < landmarkIndexes.size(); i++) {
                 control.raisePen();
                 control.setCoordinatePosition(scaledPoints[i][0].x, scaledPoints[i][0].y);
                 control.dropPen();
                 for (size_t j = 1; j < landmarkIndexes[i].size(); j++) {
                     control.interpolate(scaledPoints[i][j].x, scaledPoints[i][j].y);
-                }
-                fprintf(stdout, "Going back to start %zu\n", i);    
+                }   
                 control.interpolate(scaledPoints[i][0].x, scaledPoints[i][0].y);
             }
             control.raisePen();
             stepper.step(600);
             control.calibratePen();
         } catch (const std::invalid_argument& e) {
+            if (frameCount > 60) {
+                fprintf(stderr, "No Face!\n");
+                cameraCapture.release();
+                continue;
+            }
+            cv::imwrite("output.png", frame);
             fprintf(stderr, "No Face!\n");
-            continue;
+            goto recapture;
         }
     }
 
-    cameraCapture.release();
-    
     return 0;
 }

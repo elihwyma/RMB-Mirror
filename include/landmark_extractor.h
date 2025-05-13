@@ -3,6 +3,7 @@
 #include <opencv2/imgproc.hpp>
 #include <tensorflow/lite/interpreter.h>
 #include <tensorflow/lite/model.h>
+#include <csignal>
 
 class LandmarkExtractor
 {

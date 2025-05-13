@@ -3,6 +3,7 @@
 #include <gpiod.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <csignal>
 
 #define CONSUMER "rate-my-bot"
 #define DIR_PIN 24

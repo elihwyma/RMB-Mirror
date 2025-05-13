@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include <stepper_control.h>
+#include <csignal>
 
 #include <libdxl/dynamixel_sdk.h>
 class ServoControl {
@@ -25,6 +26,7 @@ public:
 
     int16_t raisePen();
     int16_t dropPen();
+    
 private:
     dynamixel::PortHandler *portHandler;
     dynamixel::PacketHandler *packetHandler;
@@ -33,6 +35,8 @@ private:
     int16_t getPosition(uint8_t id);
     int16_t read2ByteTxRx(uint8_t id, uint16_t address, uint16_t *data);
     int16_t write2ByteTxRx(uint8_t id, uint16_t address, uint16_t data);
+
+    static void signalHandler(int signum);
 
     uint8_t closePort();
     uint8_t openPort();
