@@ -14,9 +14,9 @@
 
 
 #define LOWEST_X -75
-#define LOWEST_Y 150
-#define HIGHEST_X 185
-#define HIGHEST_Y 220
+#define LOWEST_Y 100
+#define HIGHEST_X 190
+#define HIGHEST_Y 260
 
 #define MAX_WIDTH (HIGHEST_X - LOWEST_X)
 #define MAX_HEIGHT (HIGHEST_Y - LOWEST_Y)
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     stepper.setServoPower(true);
 
     ServoControl control(stepper);
-    
+
     if (argc >= 2 && strcmp(argv[1], "debug") == 0) {
         stepper.setServoPower(true);
         stepper.step(100);
@@ -67,6 +67,18 @@ int main(int argc, char* argv[]) {
             }
             if (input == "ss") {
                 stepper.step(10000);
+                continue;
+            }
+            if (input == "a") {
+                control.setWheelSpeed(3, 0, 512);
+                continue;
+            }
+            if (input == "d") {
+                control.setWheelSpeed(3, 1, 512);
+                continue;
+            }
+            if (input == "w") {
+                control.setWheelSpeed(3, 0, 0);
                 continue;
             }
             std::istringstream iss(input);

@@ -354,7 +354,7 @@ int16_t ServoControl::setCoordinatePosition(double x, double y) {
 
   fprintf(stdout, "Servo 1 Position: %d, Servo 2 Position: %d %f %f\n", pos1, pos2, radToDeg(angle1), 180 - radToDeg(angle2));
 
-  setPair(SERVO_MAX - angleToPosition(servo1Angle), angleToPosition(servo2Angle));
+  setPair(SERVO_MAX - angleToPosition(servo1Angle), SERVO_MAX - angleToPosition(servo2Angle));
   return 0;
 }
 
@@ -379,6 +379,7 @@ int16_t ServoControl::interpolate(double targetx, double targety) {
 }
 
 int16_t ServoControl::raisePen() {
+  return 0;
   if (!this->stepper.isPenTouching()) {
     fprintf(stdout, "Pen already raised\n");
     return 0;
@@ -389,6 +390,7 @@ int16_t ServoControl::raisePen() {
     return -1;
   }
   while (this->stepper.isPenTouching()) {
+    fprintf(stdout, "Pen Touching!\n");
     usleep(100);
   }
   ret = setWheelSpeed(3, 1, 0);
@@ -400,6 +402,7 @@ int16_t ServoControl::raisePen() {
 }
 
 int16_t ServoControl::dropPen() {
+  return 0;
   if (this->stepper.isPenTouching()) {
     fprintf(stdout, "Pen already dropped\n");
     return 0;
@@ -410,6 +413,7 @@ int16_t ServoControl::dropPen() {
     return -1;
   }
   while (!this->stepper.isPenTouching()) {
+    fprintf(stdout, "Pen Not Touching!\n");
     usleep(100);
   }
   ret = setWheelSpeed(3, 0, 0);
@@ -428,7 +432,8 @@ void ServoControl::signalHandler(int signum) {
     fprintf(stdout, "Caught signal %d\n", signum);
     if (instance) {
         instance->setWheelSpeed(3, 0, 0);
-        instance->closePort();
+        instance = nullptr;
     }
-    std::exit(signum);
+    fprintf(stdout, "Exiting\n");
+    _exit(signum);
 }
