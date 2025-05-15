@@ -27,7 +27,7 @@ WORKDIR /build
 COPY . .
 
 # Generate the project
-RUN CXX=clang-19 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=MinSizeRel
+RUN CXX=clang-19 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Debug
 
 # Build the project
 RUN cmake --build build
