@@ -73,12 +73,20 @@ int main(int argc, char* argv[]) {
                 control.setWheelSpeed(3, 0, 512);
                 continue;
             }
-            if (input == "d") {
+            if (input == "e") {
                 control.setWheelSpeed(3, 1, 512);
                 continue;
             }
             if (input == "w") {
                 control.setWheelSpeed(3, 0, 0);
+                continue;
+            }
+            if (input == "d") {
+                control.dropPen();
+                continue;
+            }
+            if (input == "r") {
+                control.raisePen();
                 continue;
             }
             std::istringstream iss(input);
@@ -257,7 +265,7 @@ int main(int argc, char* argv[]) {
 
             for (size_t i = 0; i < landmarkIndexes.size(); i++) {
                 control.raisePen();
-                control.setCoordinatePosition(scaledPoints[i][0].x, scaledPoints[i][0].y);
+                control.interpolate(scaledPoints[i][0].x, scaledPoints[i][0].y);
                 control.dropPen();
                 for (size_t j = 1; j < landmarkIndexes[i].size(); j++) {
                     control.interpolate(scaledPoints[i][j].x, scaledPoints[i][j].y);

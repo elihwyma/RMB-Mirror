@@ -379,7 +379,6 @@ int16_t ServoControl::interpolate(double targetx, double targety) {
 }
 
 int16_t ServoControl::raisePen() {
-  return 0;
   if (!this->stepper.isPenTouching()) {
     fprintf(stdout, "Pen already raised\n");
     return 0;
@@ -393,6 +392,7 @@ int16_t ServoControl::raisePen() {
     fprintf(stdout, "Pen Touching!\n");
     usleep(100);
   }
+  usleep(100000);
   ret = setWheelSpeed(3, 1, 0);
   if (ret != 0) {
     fprintf(stderr, "Failed to raise pen\n");
@@ -402,7 +402,6 @@ int16_t ServoControl::raisePen() {
 }
 
 int16_t ServoControl::dropPen() {
-  return 0;
   if (this->stepper.isPenTouching()) {
     fprintf(stdout, "Pen already dropped\n");
     return 0;

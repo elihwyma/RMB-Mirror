@@ -90,5 +90,5 @@ bool StepperControl::isButtonPressed() {
 }
 
 bool StepperControl::isPenTouching() {
-    return gpiod_line_get_value(this->penTouchingLine) == 1;
+    return gpiod_line_get_value(this->penTouchingLine) == 0;
 }
