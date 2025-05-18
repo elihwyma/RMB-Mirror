@@ -1,24 +1,7 @@
 # ================================
 # Build image
 # ================================
-FROM alpine:latest AS build
-
-RUN apk add --no-cache curl && mkdir -p /etc/apk/keys && curl -o /etc/apk/keys/portsman-anamy.rsa.pub https://raw.githubusercontent.com/elihwyma/portsman/refs/heads/main/portsman-anamy.rsa.pub
-RUN echo "https://portsman.anamy.gay" | tee -a /etc/apk/repositories 
-
-RUN apk update && apk add --no-cache \
-    cmake \
-    git \
-    clang19 \
-    pkgconf \
-    opencv-dev \ 
-    libstdc++ \
-    samurai \
-    i2c-tools-dev \
-    libgpiod-dev=1.6.5-r0 \
-    libdxl-dev \
-    tensorflowlite-dev \
-    flatbuffers-dev
+FROM containers.github.falmouth.ac.uk/aw295676/ratemybot:cache AS build
 
 # Set up a build area
 WORKDIR /build
@@ -53,7 +36,8 @@ RUN apk update && apk add --no-cache \
     libgpiod=1.6.5-r0 \
     libdxl \
     tensorflowlite \
-    flatbuffers
+    flatbuffers \
+    cpr
 
 # Set up the runtime environment
 WORKDIR /app

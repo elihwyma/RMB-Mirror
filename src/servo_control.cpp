@@ -436,3 +436,12 @@ void ServoControl::signalHandler(int signum) {
     fprintf(stdout, "Exiting\n");
     _exit(signum);
 }
+
+int16_t ServoControl::getServoTemperature(uint8_t id) {
+  uint16_t temperature = 0;
+  int16_t ret = read2ByteTxRx(id, 43, &temperature);
+  if (ret != 0) {
+    return -1;
+  }
+  return temperature;
+}

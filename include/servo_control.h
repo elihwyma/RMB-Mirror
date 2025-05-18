@@ -23,6 +23,7 @@ public:
     int16_t interpolate(double targetx, double targety);
     int16_t validatePositions(uint16_t servoOne, uint16_t servoTwo);
     int16_t setPair(uint16_t servoOne, uint16_t servoTwo);
+    int16_t getServoTemperature(uint8_t id);
 
     int16_t raisePen();
     int16_t dropPen();

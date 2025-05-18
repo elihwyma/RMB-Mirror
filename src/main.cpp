@@ -11,7 +11,7 @@
 #include <landmark_extractor.h>
 #include <unistd.h>
 #include <vector>
-
+#include <logging.h>
 
 #define LOWEST_X -75
 #define LOWEST_Y 100
@@ -23,6 +23,8 @@
 
 int main(int argc, char* argv[]) {
     printf("Hello, World!\n");
+
+    Logging logger;
 
     int cameraID = 0;
     bool dryRun = false;
@@ -275,6 +277,8 @@ int main(int argc, char* argv[]) {
             control.raisePen();
             stepper.step(600);
             control.calibratePen();
+
+            logger.log("nil", control.getServoTemperature(1), control.getServoTemperature(2), control.getServoTemperature(3));
         } catch (const std::invalid_argument& e) {
             if (frameCount > 60) {
                 fprintf(stderr, "No Face!\n");

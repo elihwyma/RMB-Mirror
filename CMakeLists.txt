@@ -10,15 +10,17 @@ add_executable(runtime)
 if(GPIOD_FOUND)
     add_definitions(-DGPIOD)
     target_include_directories( runtime PRIVATE ${GPIOD_INCLUDE_DIRS})
-    target_link_libraries( runtime ${GPIOD_LIBRARIES})
+    target_link_libraries( runtime PRIVATE ${GPIOD_LIBRARIES})
 endif()
 
 # See if TensorflowLite already exists
 find_library(TFL NAMES tensorflow-lite PATHS /usr/lib/)
 find_library(DXL NAMES dxl PATHS /usr/lib/)
+find_library(CPR NAMES cpr PATHS /usr/lib/ )
 
-target_link_libraries( runtime ${TFL} )
-target_link_libraries( runtime ${DXL} )
+target_link_libraries( runtime PRIVATE ${TFL} )
+target_link_libraries( runtime PRIVATE ${DXL} )
+target_link_libraries ( runtime PRIVATE ${CPR} )
 
 target_include_directories( runtime PUBLIC include )
 target_include_directories( runtime PRIVATE ${OpenCV_INCLUDE_DIRS} )
@@ -31,17 +33,19 @@ set_target_properties(runtime
 )
 
 target_sources( runtime
-    PRIVATE
+    PRIVATE PRIVATE
         src/main.cpp
         src/stepper_control.cpp
         src/servo_control.cpp
         src/face_detector.cpp
         src/landmark_extractor.cpp
+        src/logging.cpp
 )
 
-target_link_libraries( runtime ${OpenCV_LIBS} ${OpenCV_LIBRARIES} )
+target_link_libraries( runtime PRIVATE ${OpenCV_LIBS} ${OpenCV_LIBRARIES} )
+
 target_link_libraries (
-    runtime 
+    runtime PRIVATE 
         absl_log_internal_message
         absl_log_internal_check_op 
         absl_log_globals 
@@ -53,6 +57,6 @@ target_link_libraries (
         absl_log_internal_nullguard
         absl_log_internal_proto
         absl_log_initialize)
-target_link_libraries(runtime stdc++)
+target_link_libraries(runtime PRIVATE stdc++)
 
 # target_link_libraries (runtime i2c )
