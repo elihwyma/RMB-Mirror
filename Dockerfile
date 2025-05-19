@@ -37,7 +37,7 @@ RUN apk update && apk add --no-cache \
     libdxl \
     tensorflowlite \
     flatbuffers \
-    cpr
+    libcpr
 
 # Set up the runtime environment
 WORKDIR /app
