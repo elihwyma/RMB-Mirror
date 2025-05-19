@@ -9,7 +9,7 @@ void Logging::log(const std::string &error, const double servoOneTemp, double se
         pen_servo_temp: Double
     }
     */
-    const std::string url = "https://brandt.home.anamy.gay/logs";
+    const std::string url = "https://brandt.anamy.gay/logs";
     cpr::Response r = cpr::Post(cpr::Url{url},
         cpr::Body{R"({"error_reason": ")" + error + R"(", "link_one_temp": )" + std::to_string(servoOneTemp) + R"(, "link_two_temp": )" + std::to_string(servoTwoTemp) + R"(, "pen_servo_temp": )" + std::to_string(penServoTemp) + R"(})"},
         cpr::Header{{"Content-Type", "application/json"}},
