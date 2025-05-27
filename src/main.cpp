@@ -123,6 +123,13 @@ int main(int argc, char* argv[]) {
     // Main Program Loop
     bool pressed = false;
     for (;;) {
+        // Check we're not overheating
+        if (control.isOverheating()) {
+            fprintf(stderr, "Servo is overheating, waiting 10 seconds...\n");
+            sleep(10);
+            continue;
+        }
+
         stepper.activateLED();
         bool _pressed = stepper.isButtonPressed();
 

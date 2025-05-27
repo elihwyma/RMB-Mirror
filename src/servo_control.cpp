@@ -445,3 +445,19 @@ int16_t ServoControl::getServoTemperature(uint8_t id) {
   }
   return temperature;
 }
+
+bool ServoControl::isOverheating() {
+    int16_t temp1 = getServoTemperature(1);
+    int16_t temp2 = getServoTemperature(2);
+    int16_t temp3 = getServoTemperature(3);
+
+    if (temp1 < 0 || temp2 < 0 || temp3 < 0) {
+        fprintf(stderr, "Error reading servo temperatures\n");
+        return false;
+    }
+
+    if (temp1 > 65 || temp2 > 65 || temp3 > 65) {
+        return true;
+    }
+    return false;
+}

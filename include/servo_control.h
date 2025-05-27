@@ -27,7 +27,7 @@ public:
 
     int16_t raisePen();
     int16_t dropPen();
-    
+    bool isOverheating();
 private:
     dynamixel::PortHandler *portHandler;
     dynamixel::PacketHandler *packetHandler;
