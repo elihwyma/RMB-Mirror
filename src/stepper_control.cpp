@@ -85,10 +85,10 @@ void StepperControl::deactivateLED() {
     gpiod_line_set_value(this->buttonLedLine, 0);
 }
 
-bool StepperControl::isButtonPressed() {
+auto StepperControl::isButtonPressed() -> bool {
     return gpiod_line_get_value(this->buttonInputLine) == 0;
 }
 
-bool StepperControl::isPenTouching() {
+auto StepperControl::isPenTouching() -> bool {
     return gpiod_line_get_value(this->penTouchingLine) == 0;
 }

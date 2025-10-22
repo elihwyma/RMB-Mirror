@@ -1,10 +1,11 @@
 #include "face_detector.h"
+#include <algorithm>
 #include <cstdio>
 #include <tensorflow/lite/kernels/register.h>
 
 const float minScale = 0.1484375f;
 const float maxScale = 0.75f;
-const int strides[4] = { 8, 16, 16, 16 };
+const std::array<float, 4> strides = { 8, 16, 16, 16 };
 const float offset = 0.5f;
 const float xScale = 128.0f;
 const float yScale = 128.0f;
@@ -33,16 +34,14 @@ FaceDetector::FaceDetector(std::string modelPath)
     GenerateAnchors();
 }
 
-float FaceDetector::GetScale(int index, size_t total)
-{
+auto FaceDetector::GetScale(int index, size_t total) -> float {
     if (total == 1)
         return (minScale + maxScale) / 2.0f;
 
     return minScale + (maxScale - minScale) * (index * 1.0f) / (total - 1.0f);
 }
 
-Detection FaceDetector::DecodeBox(const float* const rawBox, const NormalizedRect& anchor)
-{
+auto FaceDetector::DecodeBox(const float* const rawBox, const NormalizedRect& anchor) -> Detection {
     const auto centerX = rawBox[0];
     const auto centerY = rawBox[1];
     const auto width = rawBox[2];
@@ -62,15 +61,13 @@ Detection FaceDetector::DecodeBox(const float* const rawBox, const NormalizedRec
     return detection;
 }
 
-float FaceDetector::SigmoidScore(float rawScore)
-{
+auto FaceDetector::SigmoidScore(float rawScore) -> float {
     const float clippedScore =
         std::min(scoreClippingThresh, std::max(-scoreClippingThresh, rawScore));
     return 1.0f / (1.0f + std::exp(-clippedScore));
 }
 
-Detections FaceDetector::FilterBoxes(const Detections& input)
-{
+auto FaceDetector::FilterBoxes(const Detections& input) -> Detections {
     if (input.size() == 0)
         throw std::invalid_argument("no face found in mediapipe face detection");
 
@@ -83,7 +80,7 @@ Detections FaceDetector::FilterBoxes(const Detections& input)
         return (input0.score > input1.score);
     };
 
-    std::sort(remainingInput.begin(), remainingInput.end(), SortByScore);
+    std::ranges::sort(remainingInput, SortByScore);
 
     while (!remainingInput.empty())
     {
@@ -93,8 +90,7 @@ Detections FaceDetector::FilterBoxes(const Detections& input)
     return output;
 }
 
-Detections FaceDetector::ExtractCandidates(Detections& remainingInput)
-{
+auto FaceDetector::ExtractCandidates(Detections& remainingInput) -> Detections {
     auto& firstBox = remainingInput[0];
     Detections candidates;
     Detections remaining;
@@ -129,15 +125,13 @@ Detections FaceDetector::ExtractCandidates(Detections& remainingInput)
     return candidates;
 }
 
-float FaceDetector::CalculateOverlap(const Detection& a, const Detection& b)
-{
+auto FaceDetector::CalculateOverlap(const Detection& a, const Detection& b) -> float {
     const auto intersectionArea = a.Intersection(b).Area();
     const auto unionArea = a.Area() + b.Area() - intersectionArea;
     return intersectionArea / unionArea;
 }
 
-Detection FaceDetector::GetWeightedUnion(const Detections& candidates)
-{
+auto FaceDetector::GetWeightedUnion(const Detections& candidates) -> Detection {
     Detection output;
     auto totalScore = .0f;
     int num_relevant_keypoints = 2;
@@ -170,8 +164,7 @@ Detection FaceDetector::GetWeightedUnion(const Detections& candidates)
     return output;
 }
 
-inline float FaceDetector::NormalizeRadians(float angle)
-{
+inline auto FaceDetector::NormalizeRadians(float angle) -> float {
     return angle - 2 * M_PI * std::floor((angle - (-M_PI)) / (2 * M_PI));
 }
 
@@ -302,10 +295,7 @@ void FaceDetector::ProjectDetections(const std::array<float, 16>& transformMatri
     };
     for (auto& detection : input)
     {
-
-        for (int i = 0; i < detection.keypoints.size(); ++i)
-        {
-            auto& kp = detection.keypoints[i];
+        for (auto &kp: detection.keypoints) {
             const auto point = project_fn({ kp.first, kp.second });
             kp.first = point.x;
             kp.second = point.y;
@@ -319,15 +309,17 @@ void FaceDetector::ProjectDetections(const std::array<float, 16>& transformMatri
         std::array<cv::Point2f, 4> box_coordinates = {
             cv::Point2f{xmin, ymin}, cv::Point2f{xmin + width, ymin},
             cv::Point2f{xmin + width, ymin + height}, cv::Point2f{xmin, ymin + height} };
-        std::transform(box_coordinates.begin(), box_coordinates.end(),
-            box_coordinates.begin(), project_fn);
+
+        std::ranges::transform(
+            box_coordinates, box_coordinates.begin(), project_fn);
+
         // b) Find new left top and right bottom points for a box which encompases
         //    non-projected (rotated) box.
         constexpr float kFloatMax = std::numeric_limits<float>::max();
         constexpr float kFloatMin = std::numeric_limits<float>::lowest();
         cv::Point2f left_top = { kFloatMax, kFloatMax };
         cv::Point2f right_bottom = { kFloatMin, kFloatMin };
-        std::for_each(box_coordinates.begin(), box_coordinates.end(),
+        std::ranges::for_each(box_coordinates,
             [&left_top, &right_bottom](const cv::Point2f& p) {
             left_top.x = std::min(left_top.x, p.x);
             left_top.y = std::min(left_top.y, p.y);
@@ -341,12 +333,11 @@ void FaceDetector::ProjectDetections(const std::array<float, 16>& transformMatri
     }
 }
 
-std::vector<NormalizedRect> FaceDetector::Process(const cv::Mat& cvImage)
-{
+auto FaceDetector::Process(const cv::Mat& cvImage) -> std::vector<NormalizedRect> {
     cv::Mat transformed;
     std::array<float, 16> transformMatrix;
     PreProcess(cvImage, transformed, transformMatrix);
-    float* input = interpreter->typed_input_tensor<float>(0);
+    auto input = interpreter->typed_input_tensor<float>(0);
     memcpy(
         input,
         transformed.ptr<float>(0),
@@ -420,12 +411,12 @@ void FaceDetector::PreProcess(const cv::Mat& originalImage, cv::Mat& transformed
     cv::Mat src_points;
     cv::boxPoints(rotated_rect, src_points);
 
-    float dst_corners[8] = { 0.0f,      dst_height,
+    std::array<float, 8> dst_corners = { 0.0f,      dst_height,
                             0.0f,      0.0f,
                             dst_width, 0.0f,
                             dst_width, dst_height };
 
-    cv::Mat dst_points = cv::Mat(4, 2, CV_32F, dst_corners);
+    cv::Mat dst_points = cv::Mat(4, 2, CV_32F, dst_corners.data());
     cv::Mat projection_matrix = cv::getPerspectiveTransform(src_points, dst_points);
     cv::warpPerspective(originalImage, transformed, projection_matrix,
         cv::Size(dst_width, dst_height), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
@@ -441,8 +432,8 @@ void FaceDetector::PreProcess(const cv::Mat& originalImage, cv::Mat& transformed
 
 void FaceDetector::PostProcess(Detections& resultingBoxes, const cv::Mat& originalImage)
 {
-    float* regressors = interpreter->typed_output_tensor<float>(0);
-    float* score = interpreter->typed_output_tensor<float>(1);
+    auto regressors = interpreter->typed_output_tensor<float>(0);
+    auto score = interpreter->typed_output_tensor<float>(1);
 
     const int keypoint_coord_offset = 4;
     const int num_values_per_keypoint = 2;

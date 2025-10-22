@@ -13,18 +13,17 @@
     #include <dirent.h>
 #endif
 
-// Control table address
-#define ADDR_MX_TORQUE_ENABLE           24                  // Control table address is different in Dynamixel model
-#define ADDR_MX_GOAL_POSITION           30
-#define ADDR_MX_PRESENT_POSITION        36
+enum DyanmixelConstants {
+  ADDR_MX_TORQUE_ENABLE = 24,
+  ADDR_MX_GOAL_POSITION = 30,
+  ADDR_MX_PRESENT_POSITION = 36,
+  BAUDRATE = 115200,
+  TORQUE_ENABLE = 1,
+  TORQUE_DISABLE = 0
+};
 
 // Protocol version
 #define PROTOCOL_VERSION                1.0                 // See which protocol version is used in the Dynamixel
-
-#define BAUDRATE                        115200
-
-#define TORQUE_ENABLE                   1                   // Value for enabling the torque
-#define TORQUE_DISABLE                  0                   // Value for disabling the torque
 
 #define L1 165.0  // mm
 #define L2 165.0  // mm
@@ -42,7 +41,7 @@
 
 using namespace dynamixel;
 
-std::string ServoControl::errorDescription(int error) {
+auto ServoControl::errorDescription(int error) -> std::string  {
     return "";
 }
 
@@ -136,7 +135,7 @@ void ServoControl::getPortName(std::string *port_name) {
     }
 }
 
-int16_t ServoControl::setPair(uint16_t servoOne, uint16_t servoTwo) {
+auto ServoControl::setPair(uint16_t servoOne, uint16_t servoTwo) -> int16_t {
   // Safety checks that we're not about to kill ourself
   int ret = write2ByteTxRx(1, ADDR_MX_GOAL_POSITION, servoOne);
   if (ret != 0) {
@@ -167,12 +166,11 @@ int16_t ServoControl::setPair(uint16_t servoOne, uint16_t servoTwo) {
   return 0;
 }
 
-int16_t ServoControl::validatePositions(uint16_t servoOne, uint16_t servoTwo) {
-  
+auto ServoControl::validatePositions(uint16_t servoOne, uint16_t servoTwo) -> int16_t {
   return 0;
 }
 
-int16_t ServoControl::setPosition(uint8_t id, uint16_t position) {
+auto ServoControl::setPosition(uint8_t id, uint16_t position) -> int16_t {
   int ret = write2ByteTxRx(id, ADDR_MX_GOAL_POSITION, position);
   if (ret != 0) {
     fprintf(stderr, "Failed to set position\n");
@@ -189,7 +187,7 @@ int16_t ServoControl::setPosition(uint8_t id, uint16_t position) {
   return 0;
 }
 
-int16_t ServoControl::read2ByteTxRx(uint8_t id, uint16_t address, uint16_t *data) {
+auto ServoControl::read2ByteTxRx(uint8_t id, uint16_t address, uint16_t *data) -> int16_t {
   uint8_t dxl_error = 0;
   int dxl_comm_result = packetHandler->read2ByteTxRx(portHandler, id, address, data, &dxl_error);
   if (dxl_comm_result != COMM_SUCCESS) {
@@ -206,7 +204,7 @@ int16_t ServoControl::read2ByteTxRx(uint8_t id, uint16_t address, uint16_t *data
   return 0;
 }
 
-int16_t ServoControl::write2ByteTxRx(uint8_t id, uint16_t address, uint16_t data) {
+auto ServoControl::write2ByteTxRx(uint8_t id, uint16_t address, uint16_t data) -> int16_t {
   uint8_t dxl_error = 0;
   int dxl_comm_result = packetHandler->write2ByteTxRx(portHandler, id, address, data, &dxl_error);
   
@@ -224,7 +222,7 @@ int16_t ServoControl::write2ByteTxRx(uint8_t id, uint16_t address, uint16_t data
   return 0;
 }
 
-int16_t ServoControl::getPosition(uint8_t id) {
+auto ServoControl::getPosition(uint8_t id) -> int16_t {
   uint16_t position = 0;
   int16_t ret = read2ByteTxRx(id, ADDR_MX_PRESENT_POSITION, &position);
   if (ret != 0) {
@@ -233,12 +231,12 @@ int16_t ServoControl::getPosition(uint8_t id) {
   return position;
 }
 
-uint8_t ServoControl::closePort() {
+auto ServoControl::closePort() -> uint8_t {
   portHandler->closePort();
   return 0;
 }
 
-uint8_t ServoControl::openPort() {
+auto ServoControl::openPort() -> uint8_t {
   uint8_t ret = portHandler->openPort();
   if (!ret) {
     printf("Failed to open the port!\n");
@@ -252,7 +250,7 @@ uint8_t ServoControl::openPort() {
   return 0;
 }
 
-int16_t ServoControl::setWheelMode(uint8_t id) {
+auto ServoControl::setWheelMode(uint8_t id) -> int16_t {
   int ret = write2ByteTxRx(id, 6, 0);
   if (ret != 0) {
     fprintf(stderr, "Failed to set wheel mode\n");
@@ -266,7 +264,7 @@ int16_t ServoControl::setWheelMode(uint8_t id) {
   return 0;
 }
 
-int16_t ServoControl::setPositionMode(uint8_t id) {
+auto ServoControl::setPositionMode(uint8_t id) -> int16_t {
   int ret = write2ByteTxRx(id, 6, 0);
   if (ret != 0) {
     fprintf(stderr, "Failed to set position mode 1\n");
@@ -280,7 +278,7 @@ int16_t ServoControl::setPositionMode(uint8_t id) {
   return 0;
 }
 
-int16_t ServoControl::setWheelSpeed(uint8_t id, uint8_t direction, uint16_t speed) {
+auto ServoControl::setWheelSpeed(uint8_t id, uint8_t direction, uint16_t speed) -> int16_t {
   // 10th bit determines direction
   if (direction == 1) {
     speed = speed | (1 << 10);
@@ -295,11 +293,11 @@ int16_t ServoControl::setWheelSpeed(uint8_t id, uint8_t direction, uint16_t spee
   return 0;
 }
 
-double radToDeg(double radians) {
+auto radToDeg(double radians) -> double {
   return radians * (180.0 / M_PI);
 }
 
-uint16_t ServoControl::angleToPosition(double degrees) {
+auto ServoControl::angleToPosition(double degrees) -> uint16_t {
   // Map to 0 - 1023
   double pos = (degrees / SERVO_RANGE_DEGREES) * SERVO_MAX;
   // Clamp to valid servo range
@@ -309,7 +307,7 @@ uint16_t ServoControl::angleToPosition(double degrees) {
   return static_cast<uint16_t>(round(pos));
 }
 
-int16_t ServoControl::setCoordinatePosition(double x, double y) {
+auto ServoControl::setCoordinatePosition(double x, double y) -> int16_t {
   fprintf(stdout, "X: %f, Y: %f\n", x, y);
 
   if (this->currentX == x && this->currentY == y) {
@@ -358,7 +356,7 @@ int16_t ServoControl::setCoordinatePosition(double x, double y) {
   return 0;
 }
 
-int16_t ServoControl::interpolate(double targetx, double targety) {
+auto ServoControl::interpolate(double targetx, double targety) -> int16_t {
   double diff_x = targetx - this->currentX;
   double diff_y = targety - this->currentY;
   size_t steps = std::max(std::abs(diff_x), std::abs(diff_y)) / 10;
@@ -378,7 +376,7 @@ int16_t ServoControl::interpolate(double targetx, double targety) {
   return 0;
 }
 
-int16_t ServoControl::raisePen() {
+auto ServoControl::raisePen() -> int16_t {
   if (!this->stepper.isPenTouching()) {
     fprintf(stdout, "Pen already raised\n");
     return 0;
@@ -401,7 +399,7 @@ int16_t ServoControl::raisePen() {
   return ret;
 }
 
-int16_t ServoControl::dropPen() {
+auto ServoControl::dropPen() -> int16_t {
   if (this->stepper.isPenTouching()) {
     fprintf(stdout, "Pen already dropped\n");
     return 0;
@@ -423,7 +421,7 @@ int16_t ServoControl::dropPen() {
   return ret;
 }
 
-int16_t ServoControl::calibratePen() {
+auto ServoControl::calibratePen() -> int16_t {
   return raisePen();
 }
 
@@ -437,7 +435,7 @@ void ServoControl::signalHandler(int signum) {
     _exit(signum);
 }
 
-int16_t ServoControl::getServoTemperature(uint8_t id) {
+auto ServoControl::getServoTemperature(uint8_t id) -> int16_t {
   uint16_t temperature = 0;
   int16_t ret = read2ByteTxRx(id, 43, &temperature);
   if (ret != 0) {
@@ -446,7 +444,7 @@ int16_t ServoControl::getServoTemperature(uint8_t id) {
   return temperature;
 }
 
-bool ServoControl::isOverheating() {
+auto ServoControl::isOverheating() -> bool {
     int16_t temp1 = getServoTemperature(1);
     int16_t temp2 = getServoTemperature(2);
     int16_t temp3 = getServoTemperature(3);

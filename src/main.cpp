@@ -1,7 +1,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <stdexcept>
-#include <stdio.h>
 #include <servo_control.h>
 #include <iostream>
 #include <runtime_types.h>
@@ -13,15 +12,17 @@
 #include <vector>
 #include <logging.h>
 
-#define LOWEST_X -75
-#define LOWEST_Y 100
-#define HIGHEST_X 190
-#define HIGHEST_Y 260
+enum Constants {
+    LOWEST_X = -75,
+    LOWEST_Y = 100,
+    HIGHEST_X = 190,
+    HIGHEST_Y = 260
+};
 
 #define MAX_WIDTH (HIGHEST_X - LOWEST_X)
 #define MAX_HEIGHT (HIGHEST_Y - LOWEST_Y)
 
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
     printf("Hello, World!\n");
 
     Logging logger;
@@ -48,7 +49,15 @@ int main(int argc, char* argv[]) {
     StepperControl stepper;
     stepper.setServoPower(true);
 
+    sleep(2);
+
     ServoControl control(stepper);
+
+    sleep(2);
+
+    stepper.step(1000);
+
+    sleep(2);
 
     if (argc >= 2 && strcmp(argv[1], "debug") == 0) {
         stepper.setServoPower(true);

@@ -10,7 +10,7 @@ WORKDIR /build
 COPY . .
 
 # Generate the project
-RUN CXX=clang-19 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Debug
+RUN CXX=clang-19 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release
 
 # Build the project
 RUN cmake --build build
@@ -36,7 +36,7 @@ RUN apk update && apk add --no-cache \
     libgpiod=1.6.5-r0 \
     libdxl \
     tensorflowlite \
-    flatbuffers \
+    flatbuffers24 \
     libcpr
 
 # Set up the runtime environment

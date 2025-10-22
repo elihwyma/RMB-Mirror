@@ -13,7 +13,7 @@ const int NUM_LIP_LANDMARKS = 80;
 const int NUM_EYE_LANDMARKS = 71;
 const int NUM_IRIS_LANDMARKS = 5;
 
-const int lip_idx[NUM_LIP_LANDMARKS] = {
+const std::array<int, NUM_LIP_LANDMARKS> lip_idx = {
         61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291,
         // Upper outer(excluding corners).
         185, 40, 39, 37, 0, 267, 269, 270, 409,
@@ -31,7 +31,7 @@ const int lip_idx[NUM_LIP_LANDMARKS] = {
         183, 42, 41, 38, 12, 268, 271, 272, 407
 };
 // left eye attention
-const int left_eye_idx[NUM_EYE_LANDMARKS] = {
+const std::array<int, NUM_EYE_LANDMARKS> left_eye_idx = {
     // Lower contour.
     33, 7, 163, 144, 145, 153, 154, 155, 133,
     // upper contour(excluding corners).
@@ -53,7 +53,7 @@ const int left_eye_idx[NUM_EYE_LANDMARKS] = {
     156, 70, 63, 105, 66, 107, 55, 193
 };
 // right eye attention
-const int right_eye_idx[NUM_EYE_LANDMARKS] = {
+const std::array<int, NUM_EYE_LANDMARKS> right_eye_idx = {
     // Lower contour.
     263, 249, 390, 373, 374, 380, 381, 382, 362,
     // Upper contour(excluding corners).
@@ -74,7 +74,7 @@ const int right_eye_idx[NUM_EYE_LANDMARKS] = {
     // Halo x5 upper contour(excluding corners) or eyebrow outer contour.
     383, 300, 293, 334, 296, 336, 285, 417
 };
-const int left_iris_idx[NUM_IRIS_LANDMARKS] = {
+const std::array<int, NUM_IRIS_LANDMARKS> left_iris_idx = {
     // Center.
     468,
     // Iris right edge.
@@ -86,7 +86,7 @@ const int left_iris_idx[NUM_IRIS_LANDMARKS] = {
     // Iris bottom edge.
     472
 };
-const int right_iris_idx[NUM_IRIS_LANDMARKS] = {
+const std::array<int, NUM_IRIS_LANDMARKS> right_iris_idx = {
     // Center.
     473,
     // Iris right edge.
@@ -119,8 +119,7 @@ LandmarkExtractor::LandmarkExtractor(std::string detectionModelPath, std::string
     fprintf(stdout, "landmark model loaded\n");
 }
 
-std::vector<cv::Point2i> LandmarkExtractor::Process(const cv::Mat& image)
-{
+auto LandmarkExtractor::Process(const cv::Mat& image) -> std::vector<cv::Point2i> {
     cv::Mat rgbImage;
     cv::cvtColor(image, rgbImage, cv::COLOR_BGR2RGB);
 
@@ -135,7 +134,7 @@ std::vector<cv::Point2i> LandmarkExtractor::Process(const cv::Mat& image)
     cv::Mat transformed;
     PreProcess(rgbImage, transformed, rect);
 
-    float* input = interpreter->typed_input_tensor<float>(0);
+    auto input = interpreter->typed_input_tensor<float>(0);
     memcpy(
         input,
         transformed.ptr<float>(0),
@@ -161,14 +160,12 @@ void LandmarkExtractor::PreProcess(const cv::Mat& originalImage, cv::Mat& transf
     cv::Mat src_points;
     cv::boxPoints(rotated_rect, src_points);
 
-    /* clang-format off */
-    float dst_corners[8] = { 0.0f,      HEIGHT,
+    std::array<float, 8> dst_corners = { 0.0f,      HEIGHT,
                             0.0f,      0.0f,
                             WIDTH, 0.0f,
                             WIDTH, HEIGHT };
-    /* clang-format on */
-
-    cv::Mat dst_points = cv::Mat(4, 2, CV_32F, dst_corners);
+  
+    cv::Mat dst_points = cv::Mat(4, 2, CV_32F, dst_corners.data());
     cv::Mat projection_matrix =
         cv::getPerspectiveTransform(src_points, dst_points);
     //cv::Mat transformed;
@@ -189,13 +186,13 @@ void LandmarkExtractor::PreProcess(const cv::Mat& originalImage, cv::Mat& transf
 
 void LandmarkExtractor::PostProcess(const cv::Mat& transformed, const NormalizedRect& box, std::vector<cv::Point2i>& landmarks)
 {
-    float* faceflag = interpreter->typed_output_tensor<float>(2);
-    float* mesh = interpreter->typed_output_tensor<float>(3);
-    float* lips = interpreter->typed_output_tensor<float>(5);
-    float* left_eye = interpreter->typed_output_tensor<float>(0);
-    float* left_iris = interpreter->typed_output_tensor<float>(4);
-    float* right_eye = interpreter->typed_output_tensor<float>(1);
-    float* right_iris = interpreter->typed_output_tensor<float>(6);
+    auto faceflag = interpreter->typed_output_tensor<float>(2);
+    auto mesh = interpreter->typed_output_tensor<float>(3);
+    auto lips = interpreter->typed_output_tensor<float>(5);
+    auto left_eye = interpreter->typed_output_tensor<float>(0);
+    auto left_iris = interpreter->typed_output_tensor<float>(4);
+    auto right_eye = interpreter->typed_output_tensor<float>(1);
+    auto right_iris = interpreter->typed_output_tensor<float>(6);
 
     std::vector<cv::Point2f> output;
     output.insert(output.end(), NUM_ATTENTION_LANDMARKS, cv::Point2f());

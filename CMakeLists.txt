@@ -7,6 +7,9 @@ find_package(OpenCV REQUIRED)
 pkg_check_modules(GPIOD QUIET libgpiod)
 add_executable(runtime)
 
+set(CLANG_TIDY_COMMAND "/usr/lib/llvm19/bin/clang-tidy" "-checks=-*,modernize-*")
+set_target_properties(runtime PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")
+
 if(GPIOD_FOUND)
     add_definitions(-DGPIOD)
     target_include_directories( runtime PRIVATE ${GPIOD_INCLUDE_DIRS})
